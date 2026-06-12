@@ -10,7 +10,7 @@
            connect-src 'none';
            img-src 'self' data: blob:;
            style-src 'self' 'unsafe-inline'">
-<title>证件复印小工具</title>
+<title>证件复印小助手</title>
 <style>
 :root {
   --bg: #f4f4f5;
@@ -19,8 +19,11 @@
   --text: #18181b;
   --muted: #71717a;
   --brand: #dc2626;
+  --brand-deep: #991b1b;
   --accent: #2563eb;
-  --radius: 6px;
+  --radius: 8px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
@@ -29,58 +32,354 @@ body {
   font-size: 13px;
   color: var(--text);
   background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部标题栏（大色块 banner） */
+.app-header {
+  position: relative;
+  flex: 0 0 auto;
+  z-index: 10;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(220, 38, 38, 0.18);
+  overflow: hidden;
+}
+.app-header-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at top right, rgba(254, 202, 202, 0.18), transparent 60%),
+    linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
+}
+.app-header-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+}
+.app-header-brand { display: flex; align-items: center; gap: 14px; }
+.app-header-icon-wrap {
+  width: 48px; height: 48px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.app-header-text { display: flex; flex-direction: column; gap: 2px; }
+.app-header-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1px;
+  line-height: 1.2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.app-header-subtitle {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.88);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+}
+.app-header-dot {
+  width: 6px; height: 6px;
+  background: #4ade80;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 6px #4ade80;
+  animation: app-header-pulse 2s ease-in-out infinite;
+}
+@keyframes app-header-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-header-dot { animation: none; }
+}
+.app-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.92);
+}
+.app-header-help {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.app-header-help:hover { background: rgba(255, 255, 255, 0.28); border-color: rgba(255, 255, 255, 0.4); }
+.app-header-help:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.app-header-version {
+  background: rgba(255, 255, 255, 0.18);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+.app-header-author {
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* 教程弹窗 */
+.tutorial-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  overflow: auto;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25), 0 4px 12px rgba(15, 23, 42, 0.1);
+  animation: tutorial-pop-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.tutorial-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: tutorial-fade-in 150ms ease;
+}
+.tutorial-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.tutorial-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.3px;
+}
+.tutorial-close {
+  width: 28px; height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.tutorial-close:hover { background: #f4f4f5; color: var(--text); }
+.tutorial-steps {
+  list-style: none;
+  margin: 0;
+  padding: 12px 20px;
+  counter-reset: tstep;
+}
+.tutorial-steps li {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  align-items: flex-start;
+}
+.tutorial-steps li + li { border-top: 1px dashed var(--border); }
+.tutorial-num {
+  flex: 0 0 26px;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.tutorial-steps strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.tutorial-steps p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.tutorial-steps kbd {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  padding: 1px 6px;
+  background: #f4f4f5;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  color: var(--text);
+  line-height: 1.4;
+  margin: 0 1px;
+}
+.tutorial-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  background: #fafafa;
+  border-radius: 0 0 12px 12px;
+}
+.tutorial-hint {
+  font-size: 11px;
+  color: var(--muted);
+}
+.tutorial-hint kbd {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  padding: 0 4px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  line-height: 1.5;
+}
+.tutorial-foot button {
+  font-size: 12px;
+  padding: 5px 14px;
+}
+@keyframes tutorial-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes tutorial-pop-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-dialog,
+  .tutorial-dialog::backdrop { animation: none; }
 }
 button {
   font: inherit; color: inherit;
   background: #fff; border: 1px solid var(--border);
   border-radius: var(--radius); padding: 6px 10px; cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
 }
 button:hover { background: #fafafa; }
 button:disabled { color: #a1a1aa; cursor: not-allowed; background: #f4f4f5; }
+button:disabled:hover { background: #f4f4f5; }
 button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 button.primary:hover { background: #1d4ed8; }
+button.primary:disabled { background: #93c5fd; border-color: #93c5fd; color: #fff; }
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.doc-card:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+button.swap-btn { padding: 4px 5px; font-size: 14px; line-height: 1; flex: 0 0 auto; }
 input[type="text"], input[type="number"], select, textarea {
   font: inherit; padding: 4px 6px; border: 1px solid var(--border);
   border-radius: var(--radius); background: #fff; width: 100%;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 input[type="range"] { width: 100%; }
 label { font-size: 12px; color: var(--muted); }
 .app {
   display: grid;
   grid-template-columns: 220px 1fr 300px;
-  grid-template-rows: 100vh;
+  grid-template-rows: 1fr;
   gap: 8px;
   padding: 8px;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 10px;
+  padding: 12px;
   overflow: auto;
+  box-shadow: var(--shadow-sm);
 }
-.panel h3 { margin: 0 0 8px; font-size: 13px; }
+.panel h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.3px;
+}
+.panel h3:not(:first-child) {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
 .row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
 .row > .grow { flex: 1; }
 
 /* 左侧：证件列表 */
 .doc-list { display: flex; flex-direction: column; gap: 8px; }
 .doc-card {
-  border: 1px solid var(--border); border-radius: var(--radius); padding: 8px;
-  cursor: pointer; background: #fff;
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 10px;
+  cursor: pointer; background: #fff; position: relative;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  box-shadow: var(--shadow-sm);
 }
-.doc-card.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
+.doc-card:hover { border-color: #a1a1aa; box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.doc-card.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,.18), var(--shadow-md); }
 .doc-card .title { font-weight: 600; }
 .doc-card .meta { color: var(--muted); font-size: 11px; margin-top: 2px; }
+.doc-card-close {
+  position: absolute; top: 0; right: 0;
+  width: 18px; height: 18px;
+  background: var(--brand); color: #fff;
+  border-radius: 0 var(--radius) 0 var(--radius);
+  display: none; align-items: center; justify-content: center;
+  font-size: 13px; line-height: 1; cursor: pointer; user-select: none;
+}
+.doc-card:hover .doc-card-close { display: flex; }
+.doc-card-close:hover { background: #b91c1c; }
 .slot-thumbs { display: flex; gap: 4px; margin-top: 6px; }
 .slot-thumb {
   width: 56px; height: 36px; border: 1px dashed var(--border);
   border-radius: 4px; background: #f4f4f5; display: flex;
   align-items: center; justify-content: center; color: var(--muted);
-  font-size: 10px; overflow: hidden;
+  font-size: 10px; overflow: hidden; position: relative;
 }
 .slot-thumb.is-dragging { background: #dbeafe; }
 .slot-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.slot-close {
+  position: absolute; top: 0; right: 0;
+  width: 16px; height: 16px;
+  background: var(--brand); color: #fff;
+  border-radius: 0 4px 0 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; line-height: 1; cursor: pointer;
+}
 
 /* 中部：A4 预览 */
 .middle { display: flex; flex-direction: column; align-items: center; gap: 8px; }
@@ -92,6 +391,27 @@ label { font-size: 12px; color: var(--muted); }
   border: 1px solid var(--border);
 }
 .scale-hint { color: var(--muted); font-size: 11px; }
+
+/* slot 切换器 */
+.slot-switcher {
+  display: flex; gap: 6px; align-self: flex-end;
+}
+.slot-switch-thumb {
+  width: 48px; height: 36px; border: 2px solid var(--border);
+  border-radius: 4px; overflow: hidden; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: var(--muted); background: #f4f4f5;
+  position: relative;
+}
+.slot-switch-thumb.active { border-color: var(--accent); }
+.slot-switch-thumb img {
+  width: 100%; height: 100%; object-fit: cover; position: absolute;
+}
+.slot-switch-thumb span {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,.5); color: #fff; font-size: 9px;
+  text-align: center; line-height: 14px;
+}
 
 /* 裁剪面板 */
 .cropper-wrap { display: flex; flex-direction: column; gap: 6px; align-items: center; }
@@ -106,11 +426,41 @@ label { font-size: 12px; color: var(--muted); }
 }
 .toggle.on { background: #fee2e2; border-color: #fca5a5; color: var(--brand); }
 
+/* 底部免责声明 */
+.app-footer {
+  flex: 0 0 auto;
+  background: #fafafa;
+  border-top: 1px solid var(--border);
+  padding: 12px 24px 10px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.app-footer-content p { margin: 0; }
+.app-footer-content p + p { margin-top: 3px; }
+.app-footer-icon {
+  color: var(--brand);
+  vertical-align: -2px;
+  margin-right: 4px;
+}
+.app-footer-content strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.app-footer-meta {
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--muted);
+  opacity: 0.7;
+  text-align: right;
+  letter-spacing: 0.3px;
+}
+
 /* 打印：唯一保留 .print-target 子树 */
 @media print {
   @page { size: A4; margin: 0; }
   html, body { background: #fff; }
-  .app { display: none !important; }
+  .app, .app-header, .app-footer { display: none !important; }
   .print-target { display: block !important; }
 }
 .print-target { display: none; }
@@ -118,7 +468,125 @@ label { font-size: 12px; color: var(--muted); }
 </style>
 </head>
 <body>
+<header class="app-header">
+  <div class="app-header-bg" aria-hidden="true"></div>
+  <div class="app-header-inner">
+    <div class="app-header-brand">
+      <span class="app-header-icon-wrap" aria-hidden="true">
+        <svg class="app-header-icon" viewBox="0 0 24 24" width="28" height="28"
+             fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+          <circle cx="9" cy="11" r="2.2"></circle>
+          <path d="M5 17c0-1.7 1.8-3 4-3s4 1.3 4 3"></path>
+          <path d="M14 9h5M14 12h5"></path>
+        </svg>
+      </span>
+      <div class="app-header-text">
+        <h1 class="app-header-title">证件复印小助手</h1>
+        <p class="app-header-subtitle">
+          <span class="app-header-dot" aria-hidden="true"></span>
+          本地处理 · 隐私安全 · 开源离线
+        </p>
+      </div>
+    </div>
+    <div class="app-header-meta">
+      <button type="button" class="app-header-help" id="tutorial-open" aria-haspopup="dialog" title="使用教程">教程</button>
+      <span class="app-header-version" title="与 git tag 同步">v1.0.0</span>
+      <span class="app-header-author">@WYH</span>
+    </div>
+  </div>
+</header>
 <div id="app"></div>
+
+<dialog class="tutorial-dialog" id="tutorial-dialog" aria-labelledby="tutorial-title" aria-describedby="tutorial-desc">
+  <header class="tutorial-head">
+    <h2 id="tutorial-title">使用教程</h2>
+    <button type="button" class="tutorial-close" id="tutorial-close" aria-label="关闭教程">×</button>
+  </header>
+  <ol class="tutorial-steps" id="tutorial-desc">
+    <li>
+      <span class="tutorial-num">1</span>
+      <div>
+        <strong>选类型并添加</strong>
+        <p>左侧下拉选证件类型（如 身份证 / 荣誉证书），点 <kbd>＋ 添加</kbd> 可建多张。</p>
+      </div>
+    </li>
+    <li>
+      <span class="tutorial-num">2</span>
+      <div>
+        <strong>上传图片</strong>
+        <p>点卡片上的 <kbd>正面</kbd> / <kbd>背面</kbd> 框上传对应图片；也支持拖入或粘贴。</p>
+      </div>
+    </li>
+    <li>
+      <span class="tutorial-num">3</span>
+      <div>
+        <strong>调整设置</strong>
+        <p>右侧可改水印文字 / 透明度、版式（一页多份 / 上下排列）、复印件感滤镜等。</p>
+      </div>
+    </li>
+    <li>
+      <span class="tutorial-num">4</span>
+      <div>
+        <strong>预览并导出</strong>
+        <p>中间查看实时 A4 效果，点 <kbd>导出 PDF</kbd> / <kbd>PNG</kbd> / <kbd>JPG</kbd> 下载，或用 <kbd>系统打印</kbd> 走真实打印机。</p>
+      </div>
+    </li>
+  </ol>
+  <footer class="tutorial-foot">
+    <span class="tutorial-hint">按 <kbd>Esc</kbd> 关闭</span>
+    <button type="button" class="primary" id="tutorial-ok">我知道了</button>
+  </footer>
+</dialog>
+<script>
+(function () {
+  var dlg = document.getElementById('tutorial-dialog');
+  var openBtn = document.getElementById('tutorial-open');
+  var closeBtn = document.getElementById('tutorial-close');
+  var okBtn = document.getElementById('tutorial-ok');
+  if (!dlg || !openBtn) return;
+  function open() { if (!dlg.open) dlg.showModal(); }
+  function close() { if (dlg.open) dlg.close(); }
+  openBtn.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+  okBtn.addEventListener('click', close);
+  // 点击 dialog 自身（背景）关闭：原生 dialog 默认带 ::backdrop 但点击透明区不关闭；
+  // 我们监听 dialog 自身的 click，判定点中的是否为 dialog 本身（即 ::backdrop）
+  dlg.addEventListener('click', function (e) {
+    var rect = dlg.getBoundingClientRect();
+    if (e.clientX < rect.left || e.clientX > rect.right ||
+        e.clientY < rect.top  || e.clientY > rect.bottom) {
+      close();
+    }
+  });
+  // 首次访问自动弹出
+  try {
+    if (!localStorage.getItem('idcopy_tutorial_seen')) {
+      dlg.showModal();
+      localStorage.setItem('idcopy_tutorial_seen', '1');
+    }
+  } catch (_) {}
+})();
+</script>
+<footer class="app-footer" role="contentinfo">
+  <div class="app-footer-content">
+    <p>
+      <svg class="app-footer-icon" viewBox="0 0 24 24" width="14" height="14"
+           fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <strong>免责声明</strong> · 本 AI 工具由个人独立开发，免费对外开放，仅供技术学习、交流体验使用。
+    </p>
+    <p>未经本人书面授权，严禁复制、封装、二次改造后用于付费售卖、商业服务、流量变现等任何盈利场景。</p>
+    <p>欢迎提交 BUG 反馈、功能优化建议与技术交流，微信：<strong>wyh0429</strong>（添加请备注"工具名称+技术交流"）。</p>
+    <p>本工具仅为技术演示用途，不保障运行稳定性与数据可靠性，不可接入正式生产业务；违规商用及不当使用引发的全部法律、经济责任，均由使用者自行承担。</p>
+  </div>
+  <div class="app-footer-meta">© 2026 @WYH · v1.0.0</div>
+</footer>
 <script>
 !function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"function"==typeof define&&define.amd?define(["exports"],e):e((t=t||self).PDFLib={})}(this,(function(t){"use strict";
 /*! *****************************************************************************
@@ -163,22 +631,23 @@ label { font-size: 12px; color: var(--muted); }
         drivingLicense: { label: "\u9A7E\u9A76\u8BC1", sizeMode: "fixed", physicalSize: { ...idCardSize }, slots: ["front", "back"] },
         hkMacau: { label: "\u6E2F\u6FB3\u901A\u884C\u8BC1", sizeMode: "fixed", physicalSize: { ...idCardSize }, slots: ["front", "back"] },
         passport: { label: "\u62A4\u7167\u5185\u9875", sizeMode: "fixed", physicalSize: { ...passportSize }, slots: ["front"] },
-        businessLicense: { label: "\u8425\u4E1A\u6267\u7167", sizeMode: "fit", physicalSize: { wMm: 297, hMm: 210 }, slots: ["front"] },
-        diploma: { label: "\u5B66\u5386/\u5B66\u4F4D\u8BC1", sizeMode: "fit", physicalSize: { wMm: 285, hMm: 210 }, slots: ["front"] },
+        businessLicense: { label: "\u8425\u4E1A\u6267\u7167", sizeMode: "fit", physicalSize: { wMm: 297, hMm: 420 }, slots: ["front"] },
+        diploma: { label: "\u5B66\u5386/\u5B66\u4F4D\u8BC1", sizeMode: "fit", physicalSize: { wMm: 297, hMm: 210 }, slots: ["front"] },
         award: { label: "\u8363\u8A89\u8BC1\u4E66", sizeMode: "fit", physicalSize: { wMm: 285, hMm: 210 }, slots: ["front"] },
         qualification: { label: "\u8D44\u8D28\u8BC1\u4E66", sizeMode: "fit", physicalSize: { wMm: 210, hMm: 297 }, slots: ["front"] },
         other: { label: "\u5176\u4ED6", sizeMode: "fit", physicalSize: { wMm: 210, hMm: 297 }, slots: ["front"] }
       };
       DEFAULT_WATERMARK = {
         enabled: true,
-        text: "\u4EC5\u4F9B{project}\u6295\u6807\u4F7F\u7528 {date}",
+        text: "\u4EC5\u4F9B{project}\u6295\u6807\u4F7F\u7528\n{date}",
         project: "\u67D0\u67D0\u9879\u76EE",
         color: "#dc2626",
         opacity: 0.35,
         fontSize: 14,
+        lineHeight: 1.2,
         angleDeg: -30,
-        gapX: 140,
-        gapY: 90,
+        gapX: 80,
+        gapY: 60,
         includeDate: true
       };
       DEFAULT_LAYOUT = {
@@ -187,8 +656,10 @@ label { font-size: 12px; color: var(--muted); }
         perPage: 1,
         margin: 18,
         // mm
-        gap: 6
-        // mm，证件之间的间距
+        gap: 6,
+        // mm，不同证件之间的间距
+        slotGap: 6
+        // mm，同一证件正反面之间的间距
       };
       DEFAULT_FILTERS = {
         grayscale: false,
@@ -225,9 +696,10 @@ label { font-size: 12px; color: var(--muted); }
       color: color(raw.color),
       opacity: num(raw.opacity, DEFAULT_WATERMARK.opacity, 0, 1),
       fontSize: num(raw.fontSize, DEFAULT_WATERMARK.fontSize, 6, 200),
+      lineHeight: num(raw.lineHeight, DEFAULT_WATERMARK.lineHeight, 0.3, 3),
       angleDeg: num(raw.angleDeg, DEFAULT_WATERMARK.angleDeg, -90, 90),
-      gapX: num(raw.gapX, DEFAULT_WATERMARK.gapX, 20, 800),
-      gapY: num(raw.gapY, DEFAULT_WATERMARK.gapY, 20, 800),
+      gapX: num(raw.gapX, DEFAULT_WATERMARK.gapX, 10, 800),
+      gapY: num(raw.gapY, DEFAULT_WATERMARK.gapY, 10, 800),
       includeDate: bool(raw.includeDate, DEFAULT_WATERMARK.includeDate)
     };
   }
@@ -237,7 +709,8 @@ label { font-size: 12px; color: var(--muted); }
       type,
       perPage: num(raw.perPage, DEFAULT_LAYOUT.perPage, 1, 12),
       margin: num(raw.margin, DEFAULT_LAYOUT.margin, 0, 50),
-      gap: num(raw.gap, DEFAULT_LAYOUT.gap, 0, 80)
+      gap: num(raw.gap, DEFAULT_LAYOUT.gap, 0, 80),
+      slotGap: num(raw.slotGap, DEFAULT_LAYOUT.slotGap, 0, 80)
     };
   }
   function cleanFilters(raw = {}) {
@@ -298,7 +771,7 @@ label { font-size: 12px; color: var(--muted); }
     if (it.sizeMode === "fixed") {
       return { wMm: it.physicalSize.wMm, hMm: it.physicalSize.hMm };
     }
-    const ratio = Math.min(availW / it.physicalSize.wMm, availH / it.physicalSize.hMm, 1);
+    const ratio = Math.min(availW / it.physicalSize.wMm, availH / it.physicalSize.hMm);
     return {
       wMm: it.physicalSize.wMm * ratio,
       hMm: it.physicalSize.hMm * ratio
@@ -307,6 +780,7 @@ label { font-size: 12px; color: var(--muted); }
   function composeStack({ flat, layout, wm }) {
     const margin = layout.margin;
     const gap = resolveGap(layout);
+    const slotGap = resolveSlotGap(layout);
     const innerW = A4.wMm - 2 * margin;
     const innerH = A4.hMm - 2 * margin;
     const sized = flat.map((it) => ({ ...it, ...sizeForItem(it, innerW, innerH) }));
@@ -314,8 +788,11 @@ label { font-size: 12px; color: var(--muted); }
     let cur = newPage(attachWm(wm));
     let used = 0;
     for (const it of sized) {
-      const needed = it.hMm + (cur.items.length ? gap : 0);
-      if (used + needed > innerH && cur.items.length) {
+      if (cur.items.length) {
+        const sameDoc = cur.items[cur.items.length - 1].docId === it.docId;
+        used += sameDoc ? slotGap : gap;
+      }
+      if (used + it.hMm > innerH && cur.items.length) {
         pages.push(cur);
         cur = newPage(attachWm(wm));
         used = 0;
@@ -331,7 +808,7 @@ label { font-size: 12px; color: var(--muted); }
         wMm: it.wMm,
         hMm: it.hMm
       });
-      used += needed;
+      used += it.hMm;
     }
     if (cur.items.length) pages.push(cur);
     return pages;
@@ -339,10 +816,10 @@ label { font-size: 12px; color: var(--muted); }
   function composeSide({ flat, layout, wm }) {
     const margin = layout.margin;
     const gap = resolveGap(layout);
+    const slotGap = resolveSlotGap(layout);
     const innerW = A4.wMm - 2 * margin;
     const innerH = A4.hMm - 2 * margin;
-    const colW = (innerW - gap) / 2;
-    const sized = flat.map((it) => ({ ...it, ...sizeForItem(it, colW, innerH) }));
+    const sized = flat.map((it) => ({ ...it, ...sizeForItem(it, (innerW - slotGap) / 2, innerH) }));
     const pages = [];
     let cur = newPage(attachWm(wm));
     let cursorY = 0;
@@ -350,6 +827,9 @@ label { font-size: 12px; color: var(--muted); }
       const left2 = sized[i];
       const right2 = sized[i + 1];
       const rowH = Math.max(left2.hMm, right2 ? right2.hMm : 0);
+      const sameDoc = right2 && left2.docId === right2.docId;
+      const hGap = sameDoc ? slotGap : gap;
+      const colW = (innerW - hGap) / 2;
       if (cursorY + rowH > innerH && cur.items.length) {
         pages.push(cur);
         cur = newPage(attachWm(wm));
@@ -373,7 +853,7 @@ label { font-size: 12px; color: var(--muted); }
           slot: right2.slot,
           transform: right2.transform,
           filters: right2.filters,
-          xMm: margin + colW + gap + (colW - right2.wMm) / 2,
+          xMm: margin + colW + hGap + (colW - right2.wMm) / 2,
           yMm: margin + cursorY,
           wMm: right2.wMm,
           hMm: right2.hMm
@@ -384,15 +864,15 @@ label { font-size: 12px; color: var(--muted); }
     if (cur.items.length) pages.push(cur);
     return pages;
   }
-  function composeChunkToPage(chunk, { margin, innerW, innerH, wm, gap }) {
+  function composeChunkToPage(chunk, { margin, innerW, innerH, wm, gap, slotGap }) {
     const cur = newPage(attachWm(wm));
     const rowH = (innerH - gap * (chunk.length - 1)) / chunk.length;
     chunk.forEach((docItems, rowIdx) => {
       const rowY = margin + rowIdx * (rowH + gap);
-      const slotW = (innerW - gap * (docItems.length - 1)) / docItems.length;
+      const slotW = (innerW - slotGap * (docItems.length - 1)) / docItems.length;
       docItems.forEach((it, colIdx) => {
         const { wMm, hMm } = sizeForItem(it, slotW, rowH);
-        const slotX = margin + colIdx * (slotW + gap);
+        const slotX = margin + colIdx * (slotW + slotGap);
         cur.items.push({
           sourceId: it.sourceId,
           docId: it.docId,
@@ -412,9 +892,10 @@ label { font-size: 12px; color: var(--muted); }
     const perPage = Math.max(1, Math.trunc(layout.perPage) || 1);
     const margin = layout.margin;
     const gap = resolveGap(layout);
+    const slotGap = resolveSlotGap(layout);
     const innerW = A4.wMm - 2 * margin;
     const innerH = A4.hMm - 2 * margin;
-    const pageCtx = { margin, innerW, innerH, wm, gap };
+    const pageCtx = { margin, innerW, innerH, wm, gap, slotGap };
     const byDoc = [];
     const seen = /* @__PURE__ */ new Map();
     for (const it of flat) {
@@ -450,13 +931,17 @@ label { font-size: 12px; color: var(--muted); }
         return composeStack({ flat, layout, wm: watermark });
     }
   }
-  var DEFAULT_GAP_MM, resolveGap;
+  var DEFAULT_GAP_MM, resolveGap, resolveSlotGap;
   var init_layout = __esm({
     "src/layout.js"() {
       init_constants();
       DEFAULT_GAP_MM = 6;
       resolveGap = (layout) => {
         const g = Number(layout?.gap);
+        return Number.isFinite(g) && g >= 0 ? g : DEFAULT_GAP_MM;
+      };
+      resolveSlotGap = (layout) => {
+        const g = Number(layout?.slotGap);
         return Number.isFinite(g) && g >= 0 ? g : DEFAULT_GAP_MM;
       };
     }
@@ -638,14 +1123,23 @@ label { font-size: 12px; color: var(--muted); }
       filters: { brightness: 1, contrast: 1, grayscale: false }
     };
   }
+  function loadPersisted(key, defaults) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) return { ...defaults, ...JSON.parse(raw) };
+    } catch (_) {
+    }
+    return { ...defaults };
+  }
   function initialState() {
     return {
       documents: [],
-      layout: { ...DEFAULT_LAYOUT },
-      watermark: { ...DEFAULT_WATERMARK },
-      filters: { ...DEFAULT_FILTERS },
+      layout: loadPersisted("idcopy_layout", DEFAULT_LAYOUT),
+      watermark: loadPersisted("idcopy_watermark", DEFAULT_WATERMARK),
+      filters: loadPersisted("idcopy_filters", DEFAULT_FILTERS),
       templates: [],
-      activeDocId: null
+      activeDocId: null,
+      activeSlotName: null
     };
   }
   function reducer(state, action) {
@@ -677,15 +1171,21 @@ label { font-size: 12px; color: var(--muted); }
           physicalSize: { wMm: clampSize(action.wMm), hMm: clampSize(action.hMm) }
         }));
       case "DOC_ADD_SLOT":
-        return mapDoc(state, action.docId, (d) => ({
-          ...d,
-          slots: { ...d.slots, [action.slot]: newSlot(action.imageId) }
-        }));
+        return {
+          ...mapDoc(state, action.docId, (d) => ({
+            ...d,
+            slots: { ...d.slots, [action.slot]: newSlot(action.imageId) }
+          })),
+          activeSlotName: action.slot
+        };
       case "DOC_REMOVE_SLOT":
-        return mapDoc(state, action.docId, (d) => ({
-          ...d,
-          slots: { ...d.slots, [action.slot]: null }
-        }));
+        return {
+          ...mapDoc(state, action.docId, (d) => ({
+            ...d,
+            slots: { ...d.slots, [action.slot]: null }
+          })),
+          activeSlotName: state.activeSlotName === action.slot ? null : state.activeSlotName
+        };
       case "DOC_SET_SLOT_TRANSFORM":
         return mapSlot(state, action.docId, action.slot, (s) => ({
           ...s,
@@ -723,7 +1223,9 @@ label { font-size: 12px; color: var(--muted); }
       case "TEMPLATES_SET":
         return { ...state, templates: action.templates };
       case "ACTIVE_SET":
-        return { ...state, activeDocId: action.docId };
+        return { ...state, activeDocId: action.docId, activeSlotName: null };
+      case "ACTIVE_SLOT_SET":
+        return { ...state, activeSlotName: action.slotName };
       default:
         return state;
     }
@@ -970,29 +1472,44 @@ label { font-size: 12px; color: var(--muted); }
   // src/ui/leftPanel.js
   function mountLeftPanel({ root, store: store2, imageStore: imageStore2 }) {
     root.classList.add("panel");
-    render();
-    store2.subscribe(render);
-    function render() {
+    const list = h("div", { class: "doc-list" });
+    root.append(h("h3", {}, ["\u8BC1\u4EF6\u5217\u8868 [build: per-doc-mirror]"]), addControl(store2), list);
+    renderList();
+    store2.subscribe(renderList);
+    function renderList() {
       const s = store2.getState();
-      root.replaceChildren();
-      root.appendChild(h("h3", {}, ["\u8BC1\u4EF6\u5217\u8868"]));
-      root.appendChild(addControl(store2));
-      const list = h("div", { class: "doc-list" });
+      list.replaceChildren();
       for (const doc of s.documents) {
         list.appendChild(docCard(doc, s.activeDocId === doc.id, store2, imageStore2));
       }
-      root.appendChild(list);
     }
   }
+  var lastSelectedKind = "idCard";
+  var topSelRef = null;
   function addControl(store2) {
     const sel = h("select", {});
     for (const [key, meta] of Object.entries(DOCUMENT_KINDS)) {
       sel.append(h("option", { value: key }, [meta.label]));
     }
+    sel.value = lastSelectedKind;
+    topSelRef = sel;
+    const track = () => {
+      lastSelectedKind = sel.value;
+    };
+    sel.addEventListener("change", track);
+    sel.addEventListener("input", track);
+    sel.addEventListener("click", track);
+    sel.addEventListener("blur", track);
+    sel.addEventListener("focus", track);
     const btn = h("button", { class: "primary", onclick: () => {
-      store2.dispatch({ type: "DOC_ADD", kind: sel.value });
+      track();
+      store2.dispatch({ type: "DOC_ADD", kind: lastSelectedKind });
     } }, ["\uFF0B \u6DFB\u52A0"]);
     return h("div", { class: "row" }, [sel, btn]);
+  }
+  function mirrorKindToTop(kind) {
+    lastSelectedKind = kind;
+    if (topSelRef && topSelRef.value !== kind) topSelRef.value = kind;
   }
   function docCard(doc, active, store2, imageStore2) {
     const meta = DOCUMENT_KINDS[doc.kind] || DOCUMENT_KINDS.other;
@@ -1001,6 +1518,30 @@ label { font-size: 12px; color: var(--muted); }
       onclick: () => store2.dispatch({ type: "ACTIVE_SET", docId: doc.id })
     });
     card.append(h("div", { class: "title" }, [meta.label]));
+    const closeBtn = h("span", {
+      class: "doc-card-close",
+      title: "\u5220\u9664\u8BE5\u8BC1\u4EF6",
+      onclick: (e) => {
+        e.stopPropagation();
+        if (confirm(`\u5220\u9664"${meta.label}"\uFF1F`)) {
+          store2.dispatch({ type: "DOC_REMOVE", docId: doc.id });
+        }
+      }
+    }, ["\xD7"]);
+    card.append(closeBtn);
+    const kindSel = h("select", {});
+    for (const [key, kmeta] of Object.entries(DOCUMENT_KINDS)) {
+      kindSel.append(h("option", { value: key }, [kmeta.label]));
+    }
+    kindSel.value = doc.kind;
+    kindSel.addEventListener("change", () => {
+      store2.dispatch({ type: "DOC_SET_KIND", docId: doc.id, kind: kindSel.value });
+      mirrorKindToTop(kindSel.value);
+    });
+    card.append(h("div", { class: "row", onclick: (e) => e.stopPropagation() }, [
+      h("label", {}, ["\u7C7B\u578B"]),
+      kindSel
+    ]));
     card.append(h("div", { class: "meta" }, [
       `${doc.sizeMode === "fixed" ? "1\u22361" : "\u81EA\u9002\u5E94"} \xB7 ${doc.physicalSize.wMm} \xD7 ${doc.physicalSize.hMm} mm`
     ]));
@@ -1016,26 +1557,43 @@ label { font-size: 12px; color: var(--muted); }
     });
     wIn.addEventListener("change", applySize);
     hIn.addEventListener("change", applySize);
+    const swapBtn = h("button", {
+      title: "\u4EA4\u6362\u5BBD\u9AD8\uFF08\u6A2A\u7AD6\u5207\u6362\uFF09",
+      class: "swap-btn",
+      onclick: (e) => {
+        e.stopPropagation();
+        store2.dispatch({
+          type: "DOC_SET_PHYSICAL_SIZE",
+          docId: doc.id,
+          wMm: doc.physicalSize.hMm,
+          hMm: doc.physicalSize.wMm
+        });
+      }
+    }, ["\u21C4"]);
     const sizeRow = h("div", { class: "row", onclick: (e) => e.stopPropagation() }, [
       h("label", {}, ["\u5BBD"]),
       wIn,
+      swapBtn,
       h("label", {}, ["\u9AD8"]),
       hIn
     ]);
     card.append(sizeRow);
-    const modeBtn = h("button", { onclick: (e) => {
-      e.stopPropagation();
-      store2.dispatch({
-        type: "DOC_SET_SIZE_MODE",
-        docId: doc.id,
-        mode: doc.sizeMode === "fixed" ? "fit" : "fixed"
-      });
-    } }, [doc.sizeMode === "fixed" ? "\u6539\u4E3A\u81EA\u9002\u5E94" : "\u6539\u4E3A\u9501\u5B9A 1\u22361"]);
-    const delBtn = h("button", { onclick: (e) => {
-      e.stopPropagation();
-      if (confirm("\u5220\u9664\u8BE5\u8BC1\u4EF6\uFF1F")) store2.dispatch({ type: "DOC_REMOVE", docId: doc.id });
-    } }, ["\u5220\u9664"]);
-    card.append(h("div", { class: "row", onclick: (e) => e.stopPropagation() }, [modeBtn, delBtn]));
+    const isFixed = doc.sizeMode === "fixed";
+    const fixedBtn = h("button", {
+      class: isFixed ? "primary" : "",
+      onclick: (e) => {
+        e.stopPropagation();
+        store2.dispatch({ type: "DOC_SET_SIZE_MODE", docId: doc.id, mode: "fixed" });
+      }
+    }, ["1\u22361"]);
+    const fitBtn = h("button", {
+      class: !isFixed ? "primary" : "",
+      onclick: (e) => {
+        e.stopPropagation();
+        store2.dispatch({ type: "DOC_SET_SIZE_MODE", docId: doc.id, mode: "fit" });
+      }
+    }, ["\u81EA\u9002\u5E94"]);
+    card.append(h("div", { class: "row", onclick: (e) => e.stopPropagation() }, [fixedBtn, fitBtn]));
     const thumbs = h("div", { class: "slot-thumbs" });
     for (const slot of Object.keys(doc.slots)) {
       thumbs.appendChild(slotZone(doc, slot, store2, imageStore2));
@@ -1050,10 +1608,20 @@ label { font-size: 12px; color: var(--muted); }
   var slotLabel = (name) => SLOT_LABEL[name] || name;
   function slotZone(doc, slot, store2, imageStore2) {
     const label = slotLabel(slot);
-    const zone = h("div", { class: "slot-thumb", title: label, onclick: (e) => e.stopPropagation() });
-    const cur = doc.slots[slot];
-    if (cur) {
-      const entry = imageStore2.get(cur.imageId);
+    const hasImage = !!doc.slots[slot];
+    const zone = h("div", {
+      class: "slot-thumb" + (hasImage ? " has-image" : ""),
+      title: label,
+      onclick: (e) => {
+        e.stopPropagation();
+        if (hasImage) {
+          store2.dispatch({ type: "ACTIVE_SET", docId: doc.id });
+          store2.dispatch({ type: "ACTIVE_SLOT_SET", slotName: slot });
+        }
+      }
+    });
+    if (hasImage) {
+      const entry = imageStore2.get(doc.slots[slot].imageId);
       if (entry) {
         const img = h("img", {});
         img.src = entry.url;
@@ -1061,6 +1629,14 @@ label { font-size: 12px; color: var(--muted); }
       } else {
         zone.append(document.createTextNode(label));
       }
+      const closeBtn = h("span", {
+        class: "slot-close",
+        onclick: (e) => {
+          e.stopPropagation();
+          store2.dispatch({ type: "DOC_REMOVE_SLOT", docId: doc.id, slot });
+        }
+      }, ["\xD7"]);
+      zone.append(closeBtn);
     } else {
       zone.append(document.createTextNode(label));
     }
@@ -1069,6 +1645,8 @@ label { font-size: 12px; color: var(--muted); }
         try {
           const e = await imageStore2.add(file);
           store2.dispatch({ type: "DOC_ADD_SLOT", docId: doc.id, slot, imageId: e.id });
+          store2.dispatch({ type: "ACTIVE_SET", docId: doc.id });
+          store2.dispatch({ type: "ACTIVE_SLOT_SET", slotName: slot });
         } catch (err) {
           alert(err.message);
         }
@@ -1105,35 +1683,44 @@ label { font-size: 12px; color: var(--muted); }
     const raw = String(config.text || "").replaceAll("{project}", project).replaceAll("{date}", date);
     return raw.slice(0, MAX_TEXT);
   }
+  var REF_MM_PER_PX = 96 / 25.4 * 0.7;
   function drawTo(ctx, config, pageSizeMm, mmPerPx, dateNow = /* @__PURE__ */ new Date()) {
     const text = resolveText(config, dateNow);
     if (!text) return;
+    const scale = mmPerPx / REF_MM_PER_PX;
     const opacity = clamp2(Number(config.opacity) || 0, 0, 1);
-    const fontSize = clamp2(Number(config.fontSize) || 12, 6, 200);
+    const fontSize = clamp2(Number(config.fontSize) || 12, 6, 200) * scale;
+    const lineHeight = clamp2(Number(config.lineHeight) || 1.2, 0.3, 3);
     const angle = clamp2(Number(config.angleDeg) || 0, -90, 90);
-    const gapX = clamp2(Number(config.gapX) || 80, 20, 800);
-    const gapY = clamp2(Number(config.gapY) || 60, 20, 800);
+    const gapX = clamp2(Number(config.gapX) || 80, 10, 800) * scale;
+    const gapY = clamp2(Number(config.gapY) || 60, 10, 800) * scale;
+    const lines = text.split("\n");
+    const linePx = fontSize * lineHeight;
     const pageWpx = pageSizeMm.wMm * mmPerPx;
     const pageHpx = pageSizeMm.hMm * mmPerPx;
     ctx.save();
     ctx.globalAlpha = opacity;
     ctx.fillStyle = config.color || "#dc2626";
     ctx.font = `600 ${fontSize}px -apple-system, "Helvetica Neue", "PingFang SC", sans-serif`;
-    ctx.textBaseline = "middle";
+    ctx.textBaseline = "top";
     ctx.translate(pageWpx / 2, pageHpx / 2);
     ctx.rotate(angle * Math.PI / 180);
     const diag = Math.hypot(pageWpx, pageHpx);
     const halfDiag = diag / 2;
-    const textWidth = ctx.measureText(text).width;
-    for (let y = -halfDiag; y <= halfDiag; y += gapY) {
+    const textWidth = Math.max(...lines.map((l) => ctx.measureText(l).width));
+    const blockH = lines.length * linePx;
+    for (let y = -halfDiag; y <= halfDiag; y += gapY + blockH) {
       for (let x = -halfDiag - textWidth; x <= halfDiag; x += gapX + textWidth) {
-        ctx.fillText(text, x, y);
+        for (let li = 0; li < lines.length; li++) {
+          ctx.fillText(lines[li], x, y + li * linePx);
+        }
       }
     }
     ctx.restore();
   }
 
   // src/renderer.js
+  var grayCache = /* @__PURE__ */ new Map();
   function renderPage(plan, { mmPerPx, imageGetter, globalFilters = null, dateNow = /* @__PURE__ */ new Date() }) {
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(plan.pageSize.wMm * mmPerPx);
@@ -1149,6 +1736,25 @@ label { font-size: 12px; color: var(--muted); }
       drawTo(ctx, plan.watermark, plan.pageSize, mmPerPx, dateNow);
     }
     return canvas;
+  }
+  function grayFromCache(bitmap, sx, sy, sw, sh) {
+    const key = `${sx},${sy},${sw},${sh}`;
+    let entry = grayCache.get(key);
+    if (entry && entry.bitmap === bitmap) return entry.canvas;
+    if (grayCache.size > 12) grayCache.clear();
+    const off = document.createElement("canvas");
+    off.width = sw;
+    off.height = sh;
+    const offCtx = off.getContext("2d");
+    offCtx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, sw, sh);
+    const data = offCtx.getImageData(0, 0, sw, sh).data;
+    for (let i = 0; i < data.length; i += 4) {
+      const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+      data[i] = data[i + 1] = data[i + 2] = gray;
+    }
+    offCtx.putImageData(new ImageData(data, sw, sh), 0, 0);
+    grayCache.set(key, { bitmap, canvas: off });
+    return off;
   }
   function drawItem(ctx, item, imageGetter, mmPerPx, globalFilters) {
     const entry = imageGetter(item.sourceId);
@@ -1179,17 +1785,23 @@ label { font-size: 12px; color: var(--muted); }
     const filterParts = [];
     if (f.brightness !== 1) filterParts.push(`brightness(${f.brightness})`);
     if (f.contrast !== 1) filterParts.push(`contrast(${f.contrast})`);
-    if (f.grayscale) filterParts.push("grayscale(1)");
     ctx.filter = filterParts.length ? filterParts.join(" ") : "none";
+    let source = entry.bitmap;
+    let sx = src.x, sy = src.y, sw = src.w, sh = src.h;
+    if (f.grayscale) {
+      source = grayFromCache(entry.bitmap, sx, sy, sw, sh);
+      sx = 0;
+      sy = 0;
+    }
     ctx.translate(dx + dw / 2 + t.offsetX, dy + dh / 2 + t.offsetY);
     ctx.rotate((t.rotateDeg || 0) * Math.PI / 180);
     ctx.scale(t.scale || 1, t.scale || 1);
     ctx.drawImage(
-      entry.bitmap,
-      src.x,
-      src.y,
-      src.w,
-      src.h,
+      source,
+      sx,
+      sy,
+      sw,
+      sh,
       -dw / 2,
       -dh / 2,
       dw,
@@ -1199,8 +1811,9 @@ label { font-size: 12px; color: var(--muted); }
   }
 
   // src/cropper.js
-  var HANDLE = 10;
-  function mountCropper({ canvas, getEntry, getTransform, onTransformChange }) {
+  var HANDLE = 14;
+  var EDGE_HANDLE = 8;
+  function mountCropper({ canvas, getEntry, getTransform, onTransformChange, isEditing }) {
     const ctx = canvas.getContext("2d");
     let dragging = null;
     let lastPt = null;
@@ -1243,7 +1856,7 @@ label { font-size: 12px; color: var(--muted); }
       ctx.scale(t.scale || 1, t.scale || 1);
       ctx.drawImage(entry.bitmap, -base.w / 2, -base.h / 2, base.w, base.h);
       ctx.restore();
-      if (t.cropRect) drawCropFrame(t.cropRect, base);
+      if (t.cropRect && isEditing && isEditing()) drawCropFrame(t.cropRect, base);
     }
     function drawCropFrame(crop, base) {
       const { ratio } = base;
@@ -1263,9 +1876,24 @@ label { font-size: 12px; color: var(--muted); }
         ctx.fillStyle = "#facc15";
         ctx.fillRect(hx - HANDLE / 2, hy - HANDLE / 2, HANDLE, HANDLE);
       }
+      const edgePts = [
+        [x + w / 2, y],
+        // top
+        [x + w / 2, y + h3],
+        // bottom
+        [x, y + h3 / 2],
+        // left
+        [x + w, y + h3 / 2]
+        // right
+      ];
+      for (const [ex, ey] of edgePts) {
+        ctx.fillStyle = "#facc15";
+        ctx.fillRect(ex - EDGE_HANDLE / 2, ey - EDGE_HANDLE / 2, EDGE_HANDLE, EDGE_HANDLE);
+      }
       ctx.restore();
     }
     function hitHandle(px, py) {
+      if (!isEditing || !isEditing()) return null;
       const t = getTransform();
       if (!t.cropRect) return null;
       const base = imageDisplayRect();
@@ -1279,6 +1907,10 @@ label { font-size: 12px; color: var(--muted); }
       for (const [name, [hx, hy]] of Object.entries(corners)) {
         if (Math.abs(px - hx) < HANDLE && Math.abs(py - hy) < HANDLE) return name;
       }
+      const edges = { top: [x + w / 2, y], bottom: [x + w / 2, y + h3], left: [x, y + h3 / 2], right: [x + w, y + h3 / 2] };
+      for (const [name, [ex, ey]] of Object.entries(edges)) {
+        if (Math.abs(px - ex) < EDGE_HANDLE + 2 && Math.abs(py - ey) < EDGE_HANDLE + 2) return name;
+      }
       return null;
     }
     function ptFromEvent(e) {
@@ -1290,11 +1922,26 @@ label { font-size: 12px; color: var(--muted); }
       const handle = hitHandle(p.x, p.y);
       dragging = handle ? { handle } : "move";
       lastPt = p;
+      canvas.style.cursor = handle ? CURSOR_MAP[handle] || "move" : "grabbing";
       canvas.setPointerCapture(e.pointerId);
     }
+    const CURSOR_MAP = {
+      tl: "nw-resize",
+      tr: "ne-resize",
+      bl: "sw-resize",
+      br: "se-resize",
+      top: "n-resize",
+      bottom: "s-resize",
+      left: "w-resize",
+      right: "e-resize"
+    };
     function onMove(e) {
-      if (!dragging) return;
       const p = ptFromEvent(e);
+      if (!dragging) {
+        const h3 = hitHandle(p.x, p.y);
+        canvas.style.cursor = h3 ? CURSOR_MAP[h3] || "move" : "grab";
+        return;
+      }
       const dx = p.x - lastPt.x;
       const dy = p.y - lastPt.y;
       lastPt = p;
@@ -1329,6 +1976,20 @@ label { font-size: 12px; color: var(--muted); }
             r.w += sx;
             r.h += sy;
             break;
+          case "top":
+            r.y += sy;
+            r.h -= sy;
+            break;
+          case "bottom":
+            r.h += sy;
+            break;
+          case "left":
+            r.x += sx;
+            r.w -= sx;
+            break;
+          case "right":
+            r.w += sx;
+            break;
         }
         r.w = Math.max(20, r.w);
         r.h = Math.max(20, r.h);
@@ -1338,6 +1999,7 @@ label { font-size: 12px; color: var(--muted); }
     function onUp(e) {
       dragging = null;
       lastPt = null;
+      canvas.style.cursor = "";
       try {
         canvas.releasePointerCapture(e.pointerId);
       } catch (_) {
@@ -1488,18 +2150,22 @@ label { font-size: 12px; color: var(--muted); }
     root.classList.add("panel", "middle");
     const toolbar = document.createElement("div");
     toolbar.className = "preview-toolbar";
+    const slotSwitcher = document.createElement("div");
+    slotSwitcher.className = "slot-switcher";
     const previewStack = document.createElement("div");
     previewStack.className = "preview-stack";
     const cropperWrap = document.createElement("div");
     cropperWrap.className = "cropper-wrap";
-    root.append(toolbar, cropperWrap, previewStack);
+    root.append(toolbar, slotSwitcher, cropperWrap, previewStack);
     let cropper = null;
+    let lastCropperKey = null;
+    let isEditingCrop = false;
     function activeSlot() {
       const s = store2.getState();
       const doc = s.documents.find((d) => d.id === s.activeDocId);
       if (!doc) return null;
-      for (const name of Object.keys(doc.slots)) {
-        if (doc.slots[name]) return { doc, slot: name, ref: doc.slots[name] };
+      if (s.activeSlotName && doc.slots[s.activeSlotName]) {
+        return { doc, slot: s.activeSlotName, ref: doc.slots[s.activeSlotName] };
       }
       return null;
     }
@@ -1516,6 +2182,7 @@ label { font-size: 12px; color: var(--muted); }
       const disabled = plans.length === 0;
       const globalFilters = store2.getState().filters;
       const pdf = exportBtn("\u5BFC\u51FA PDF", () => toPdf({ plans, imageGetter: (id) => imageStore2.get(id), globalFilters }));
+      pdf.classList.add("primary");
       const png = exportBtn("\u5BFC\u51FA PNG", () => toPng({ plans, imageGetter: (id) => imageStore2.get(id), globalFilters }));
       const jpg = exportBtn("\u5BFC\u51FA JPG", () => toJpg({ plans, imageGetter: (id) => imageStore2.get(id), globalFilters }));
       const prn = exportBtn("\u7CFB\u7EDF\u6253\u5370", () => printPlans({ plans, imageGetter: (id) => imageStore2.get(id), globalFilters }));
@@ -1542,40 +2209,71 @@ label { font-size: 12px; color: var(--muted); }
             patch: { scale: 1, rotateDeg: 0, offsetX: 0, offsetY: 0, cropRect: null }
           });
         };
+        const curCrop = sel.ref.transform.cropRect;
         const crop = document.createElement("button");
-        crop.textContent = sel.ref.transform.cropRect ? "\u53D6\u6D88\u88C1\u526A" : "\u5F00\u59CB\u88C1\u526A";
-        crop.onclick = () => {
-          const entry = imageStore2.get(sel.ref.imageId);
-          if (!entry) return;
-          const cur = sel.ref.transform.cropRect;
-          if (cur) {
-            store2.dispatch({
-              type: "DOC_SET_SLOT_TRANSFORM",
-              docId: sel.doc.id,
-              slot: sel.slot,
-              patch: { cropRect: null }
-            });
-          } else {
+        if (curCrop && isEditingCrop) {
+          crop.textContent = "\u786E\u5B9A";
+          crop.className = "primary";
+          crop.onclick = () => {
+            isEditingCrop = false;
+            store2.dispatch({ type: "DOC_SET_SIZE_MODE", docId: sel.doc.id, mode: "fit" });
+            renderAll();
+          };
+          toolbar.append(rot, crop);
+          const cancelBtn = document.createElement("button");
+          cancelBtn.textContent = "\u53D6\u6D88";
+          cancelBtn.onclick = () => {
+            isEditingCrop = false;
+            store2.dispatch({ type: "DOC_SET_SLOT_TRANSFORM", docId: sel.doc.id, slot: sel.slot, patch: { cropRect: null } });
+          };
+          toolbar.append(cancelBtn);
+        } else if (curCrop && !isEditingCrop) {
+          crop.textContent = "\u91CD\u65B0\u88C1\u526A";
+          crop.onclick = () => {
+            isEditingCrop = true;
+            renderAll();
+          };
+          toolbar.append(rot, crop);
+          const removeBtn = document.createElement("button");
+          removeBtn.textContent = "\u53D6\u6D88\u88C1\u526A";
+          removeBtn.onclick = () => {
+            store2.dispatch({ type: "DOC_SET_SLOT_TRANSFORM", docId: sel.doc.id, slot: sel.slot, patch: { cropRect: null } });
+          };
+          toolbar.append(removeBtn);
+        } else {
+          crop.textContent = "\u5F00\u59CB\u88C1\u526A";
+          crop.onclick = () => {
+            const entry = imageStore2.get(sel.ref.imageId);
+            if (!entry) return;
             const w = entry.naturalWidth * 0.8;
             const h3 = entry.naturalHeight * 0.8;
+            isEditingCrop = true;
             store2.dispatch({
               type: "DOC_SET_SLOT_TRANSFORM",
               docId: sel.doc.id,
               slot: sel.slot,
               patch: { cropRect: { x: (entry.naturalWidth - w) / 2, y: (entry.naturalHeight - h3) / 2, w, h: h3 } }
             });
-          }
-        };
-        toolbar.append(rot, crop, reset);
+          };
+          toolbar.append(rot, crop);
+        }
+        toolbar.append(reset);
       }
     }
     function renderCropper() {
+      const sel = activeSlot();
+      const key = sel ? `${sel.doc.id}/${sel.slot}` : null;
+      if (key !== lastCropperKey) isEditingCrop = false;
+      if (key === lastCropperKey && cropper) {
+        cropper.redraw();
+        return;
+      }
       cropperWrap.replaceChildren();
       if (cropper) {
         cropper.destroy();
         cropper = null;
       }
-      const sel = activeSlot();
+      lastCropperKey = key;
       if (!sel) return;
       const canvas = document.createElement("canvas");
       canvas.className = "cropper-canvas";
@@ -1591,9 +2289,40 @@ label { font-size: 12px; color: var(--muted); }
             slot: sel.slot,
             patch
           });
-        }
+        },
+        isEditing: () => isEditingCrop
       });
       cropper.redraw();
+    }
+    function renderSlotSwitcher() {
+      slotSwitcher.replaceChildren();
+      const s = store2.getState();
+      const doc = s.documents.find((d) => d.id === s.activeDocId);
+      if (!doc) return;
+      const SLOT_LABEL2 = { front: "\u6B63\u9762", back: "\u80CC\u9762" };
+      const slotLabel2 = (name) => SLOT_LABEL2[name] || name;
+      for (const name of Object.keys(doc.slots)) {
+        const slot = doc.slots[name];
+        const thumb = document.createElement("div");
+        thumb.className = "slot-switch-thumb" + (s.activeSlotName === name ? " active" : "");
+        thumb.title = slotLabel2(name);
+        thumb.onclick = (e) => {
+          e.stopPropagation();
+          store2.dispatch({ type: "ACTIVE_SLOT_SET", slotName: name });
+        };
+        if (slot) {
+          const entry = imageStore2.get(slot.imageId);
+          if (entry) {
+            const img = document.createElement("img");
+            img.src = entry.url;
+            thumb.append(img);
+          }
+        }
+        const label = document.createElement("span");
+        label.textContent = slotLabel2(name);
+        thumb.append(label);
+        slotSwitcher.append(thumb);
+      }
     }
     function computePlans() {
       const s = store2.getState();
@@ -1619,6 +2348,7 @@ label { font-size: 12px; color: var(--muted); }
     }
     function renderAll() {
       renderToolbar();
+      renderSlotSwitcher();
       renderCropper();
       renderPreview();
     }
@@ -1629,8 +2359,14 @@ label { font-size: 12px; color: var(--muted); }
   // src/ui/rightPanel.js
   function mountRightPanel({ root, store: store2, templates: templates2 }) {
     root.classList.add("panel");
+    let rafId = 0;
     render();
-    store2.subscribe(render);
+    store2.subscribe(() => {
+      if (!rafId) rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        render();
+      });
+    });
     function render() {
       const s = store2.getState();
       const wm = s.watermark;
@@ -1671,6 +2407,27 @@ label { font-size: 12px; color: var(--muted); }
         value: wm.fontSize,
         onInput: (v) => store2.dispatch({ type: "WATERMARK_SET", patch: { fontSize: Number(v) } })
       })));
+      root.appendChild(field(`\u884C\u8DDD ${(wm.lineHeight ?? 1.2).toFixed(1)}`, rangeInput({
+        min: 0.3,
+        max: 3,
+        step: 0.1,
+        value: wm.lineHeight ?? 1.2,
+        onInput: (v) => store2.dispatch({ type: "WATERMARK_SET", patch: { lineHeight: Number(v) } })
+      })));
+      root.appendChild(field(`\u6A2A\u5411\u95F4\u8DDD ${wm.gapX ?? 80}`, rangeInput({
+        min: 10,
+        max: 400,
+        step: 5,
+        value: wm.gapX ?? 80,
+        onInput: (v) => store2.dispatch({ type: "WATERMARK_SET", patch: { gapX: Number(v) } })
+      })));
+      root.appendChild(field(`\u7EB5\u5411\u95F4\u8DDD ${wm.gapY ?? 60}`, rangeInput({
+        min: 10,
+        max: 400,
+        step: 5,
+        value: wm.gapY ?? 60,
+        onInput: (v) => store2.dispatch({ type: "WATERMARK_SET", patch: { gapY: Number(v) } })
+      })));
       root.appendChild(field("\u5305\u542B\u65E5\u671F", checkboxInput({
         checked: wm.includeDate,
         onChange: (v) => store2.dispatch({ type: "WATERMARK_SET", patch: { includeDate: v } })
@@ -1702,6 +2459,13 @@ label { font-size: 12px; color: var(--muted); }
         step: 1,
         value: lay.gap ?? 6,
         onInput: (v) => store2.dispatch({ type: "LAYOUT_SET", patch: { gap: Number(v) } })
+      })));
+      root.appendChild(field(`\u6B63\u53CD\u9762\u95F4\u8DDD ${lay.slotGap ?? 6} mm`, rangeInput({
+        min: 0,
+        max: 80,
+        step: 1,
+        value: lay.slotGap ?? 6,
+        onInput: (v) => store2.dispatch({ type: "LAYOUT_SET", patch: { slotGap: Number(v) } })
       })));
       root.appendChild(h2("div", { class: "right-section" }));
       root.appendChild(h2("h3", {}, ["\u590D\u5370\u4EF6\u611F\uFF08\u5168\u5C40\u6EE4\u955C\uFF09"]));
@@ -1804,7 +2568,7 @@ label { font-size: 12px; color: var(--muted); }
   function textInput({ value, maxLength, onInput }) {
     const i = h2("input", { type: "text", maxlength: maxLength });
     i.value = value || "";
-    i.addEventListener("input", () => onInput(i.value));
+    i.addEventListener("change", () => onInput(i.value));
     return i;
   }
   function colorInput({ value, onInput }) {
@@ -1858,6 +2622,14 @@ label { font-size: 12px; color: var(--muted); }
   mountMiddlePanel({ root: middle, store, imageStore });
   mountRightPanel({ root: right, store, templates });
   store.dispatch({ type: "TEMPLATES_SET", templates: templates.list() });
+  store.subscribe((state) => {
+    try {
+      localStorage.setItem("idcopy_watermark", JSON.stringify(state.watermark));
+      localStorage.setItem("idcopy_layout", JSON.stringify(state.layout));
+      localStorage.setItem("idcopy_filters", JSON.stringify(state.filters));
+    } catch (_) {
+    }
+  });
   window.addEventListener("beforeunload", () => imageStore.clear());
   if (new URL(location.href).searchParams.get("test") === "1") {
     Promise.resolve().then(() => (init_selftest(), selftest_exports)).then((m) => m.runSelfTest());

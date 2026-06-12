@@ -22,9 +22,10 @@ function cleanWatermark(raw = {}) {
     color:       color(raw.color),
     opacity:     num(raw.opacity,  DEFAULT_WATERMARK.opacity,  0,   1),
     fontSize:    num(raw.fontSize, DEFAULT_WATERMARK.fontSize, 6,   200),
+    lineHeight:  num(raw.lineHeight, DEFAULT_WATERMARK.lineHeight, 0.3, 3),
     angleDeg:    num(raw.angleDeg, DEFAULT_WATERMARK.angleDeg, -90, 90),
-    gapX:        num(raw.gapX,     DEFAULT_WATERMARK.gapX,     20,  800),
-    gapY:        num(raw.gapY,     DEFAULT_WATERMARK.gapY,     20,  800),
+    gapX:        num(raw.gapX,     DEFAULT_WATERMARK.gapX,     10,  800),
+    gapY:        num(raw.gapY,     DEFAULT_WATERMARK.gapY,     10,  800),
     includeDate: bool(raw.includeDate, DEFAULT_WATERMARK.includeDate)
   };
 }
@@ -35,7 +36,8 @@ function cleanLayout(raw = {}) {
     type,
     perPage: num(raw.perPage, DEFAULT_LAYOUT.perPage, 1, 12),
     margin:  num(raw.margin,  DEFAULT_LAYOUT.margin,  0, 50),
-    gap:     num(raw.gap,     DEFAULT_LAYOUT.gap,     0, 80)
+    gap:     num(raw.gap,     DEFAULT_LAYOUT.gap,     0, 80),
+    slotGap: num(raw.slotGap, DEFAULT_LAYOUT.slotGap, 0, 80)
   };
 }
 

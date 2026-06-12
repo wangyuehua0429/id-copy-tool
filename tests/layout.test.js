@@ -13,7 +13,7 @@ const idCardDoc = (id = 'd1', front = 'img_a', back = 'img_b') => ({
 
 const businessDoc = (id = 'b1') => ({
   id, kind: 'businessLicense', sizeMode: 'fit',
-  physicalSize: { wMm: 297, hMm: 210 },
+  physicalSize: { wMm: 297, hMm: 420 },
   slots: { front: { imageId: 'img_biz', transform: {}, filters: {} } }
 });
 
@@ -116,7 +116,7 @@ describe('compose — multi 版式（fixed 类）', () => {
 });
 
 describe('compose — fit 类自适应缩放', () => {
-  it('营业执照(297×210) 单独放 stack，按 A4 可用宽度缩放但不超过原尺寸', () => {
+  it('营业执照(297×420) 单独放 stack，按 A4 可用宽度缩放', () => {
     const plans = compose({
       documents: [businessDoc()],
       layout: layoutCfg(),
@@ -125,11 +125,11 @@ describe('compose — fit 类自适应缩放', () => {
     const it = plans[0].items[0];
     // 可用宽度 = 210 - 2*18 = 174
     expect(it.wMm).toBeCloseTo(174, 1);
-    // 等比缩放：高度 = 174 * 210/297
-    expect(it.hMm).toBeCloseTo(174 * 210 / 297, 1);
+    // 等比缩放：高度 = 174 * 420/297
+    expect(it.hMm).toBeCloseTo(174 * 420 / 297, 1);
   });
 
-  it('fit 类自然尺寸 < 槽位时不放大', () => {
+  it('fit 类按可用空间等比缩放', () => {
     const tinyFit = {
       id: 't1', kind: 'other', sizeMode: 'fit',
       physicalSize: { wMm: 50, hMm: 30 },
@@ -140,8 +140,9 @@ describe('compose — fit 类自适应缩放', () => {
       layout: layoutCfg(),
       watermark: wmCfg()
     });
-    expect(plans[0].items[0].wMm).toBe(50);
-    expect(plans[0].items[0].hMm).toBe(30);
+    // 可用宽度 = 210 - 2*18 = 174，ratio = min(174/50, 261/30) = 3.48
+    expect(plans[0].items[0].wMm).toBeCloseTo(174, 1);
+    expect(plans[0].items[0].hMm).toBeCloseTo(174 * 30 / 50, 1);
   });
 });
 

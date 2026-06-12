@@ -1,7 +1,10 @@
 export function mountRightPanel({ root, store, templates }) {
   root.classList.add('panel');
+  let rafId = 0;
   render();
-  store.subscribe(render);
+  store.subscribe(() => {
+    if (!rafId) rafId = requestAnimationFrame(() => { rafId = 0; render(); });
+  });
 
   function render() {
     const s = store.getState();
@@ -37,6 +40,18 @@ export function mountRightPanel({ root, store, templates }) {
       min: 6, max: 60, step: 1, value: wm.fontSize,
       onInput: (v) => store.dispatch({ type: 'WATERMARK_SET', patch: { fontSize: Number(v) } })
     })));
+    root.appendChild(field(`行距 ${(wm.lineHeight ?? 1.2).toFixed(1)}`, rangeInput({
+      min: 0.3, max: 3, step: 0.1, value: wm.lineHeight ?? 1.2,
+      onInput: (v) => store.dispatch({ type: 'WATERMARK_SET', patch: { lineHeight: Number(v) } })
+    })));
+    root.appendChild(field(`横向间距 ${wm.gapX ?? 80}`, rangeInput({
+      min: 10, max: 400, step: 5, value: wm.gapX ?? 80,
+      onInput: (v) => store.dispatch({ type: 'WATERMARK_SET', patch: { gapX: Number(v) } })
+    })));
+    root.appendChild(field(`纵向间距 ${wm.gapY ?? 60}`, rangeInput({
+      min: 10, max: 400, step: 5, value: wm.gapY ?? 60,
+      onInput: (v) => store.dispatch({ type: 'WATERMARK_SET', patch: { gapY: Number(v) } })
+    })));
     root.appendChild(field('包含日期', checkboxInput({
       checked: wm.includeDate,
       onChange: (v) => store.dispatch({ type: 'WATERMARK_SET', patch: { includeDate: v } })
@@ -62,6 +77,10 @@ export function mountRightPanel({ root, store, templates }) {
     root.appendChild(field(`证件间距 ${lay.gap ?? 6} mm`, rangeInput({
       min: 0, max: 80, step: 1, value: lay.gap ?? 6,
       onInput: (v) => store.dispatch({ type: 'LAYOUT_SET', patch: { gap: Number(v) } })
+    })));
+    root.appendChild(field(`正反面间距 ${lay.slotGap ?? 6} mm`, rangeInput({
+      min: 0, max: 80, step: 1, value: lay.slotGap ?? 6,
+      onInput: (v) => store.dispatch({ type: 'LAYOUT_SET', patch: { slotGap: Number(v) } })
     })));
 
     root.appendChild(h('div', { class: 'right-section' }));
@@ -164,7 +183,7 @@ function field(label, control) {
 function textInput({ value, maxLength, onInput }) {
   const i = h('input', { type: 'text', maxlength: maxLength });
   i.value = value || '';
-  i.addEventListener('input', () => onInput(i.value));
+  i.addEventListener('change', () => onInput(i.value));
   return i;
 }
 function colorInput({ value, onInput }) {

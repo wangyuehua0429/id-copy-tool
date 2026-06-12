@@ -7,13 +7,14 @@
 //
 // 交互：
 //   - 拖拽画布：平移图像（更新 transform.offsetX/Y）
-//   - 滚轮：缩放（更新 transform.scale）
-//   - 拖动 4 个角点：调整 transform.cropRect（源图坐标系）
+//   - 滚轮：缩放图像（更新 transform.scale）
+//   - 拖动 4 角 + 4 边中点：调整 transform.cropRect（源图坐标系）
 //   - 旋转、滤镜由外部按钮控制并通过 onTransformChange 触发 redraw
 
-const HANDLE = 10;
+const HANDLE = 14;
+const EDGE_HANDLE = 8;
 
-export function mountCropper({ canvas, getEntry, getTransform, onTransformChange }) {
+export function mountCropper({ canvas, getEntry, getTransform, onTransformChange, isEditing }) {
   const ctx = canvas.getContext('2d');
   let dragging = null;     // 'move' | { handle: 'tl'|'tr'|'bl'|'br' }
   let lastPt = null;
@@ -61,7 +62,7 @@ export function mountCropper({ canvas, getEntry, getTransform, onTransformChange
     ctx.drawImage(entry.bitmap, -base.w / 2, -base.h / 2, base.w, base.h);
     ctx.restore();
 
-    if (t.cropRect) drawCropFrame(t.cropRect, base);
+    if (t.cropRect && isEditing && isEditing()) drawCropFrame(t.cropRect, base);
   }
 
   function drawCropFrame(crop, base) {
@@ -78,18 +79,32 @@ export function mountCropper({ canvas, getEntry, getTransform, onTransformChange
     ctx.fillRect(0, 0, vw, vh);
     ctx.clearRect(x, y, w, h);
 
-    // 边框 + 4 角
+    // 边框
     ctx.strokeStyle = '#facc15';
     ctx.lineWidth = 2;
     ctx.strokeRect(x, y, w, h);
+
+    // 4 角手柄
     for (const [hx, hy] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) {
       ctx.fillStyle = '#facc15';
       ctx.fillRect(hx - HANDLE / 2, hy - HANDLE / 2, HANDLE, HANDLE);
+    }
+    // 4 边中点手柄
+    const edgePts = [
+      [x + w / 2, y],          // top
+      [x + w / 2, y + h],      // bottom
+      [x, y + h / 2],          // left
+      [x + w, y + h / 2],      // right
+    ];
+    for (const [ex, ey] of edgePts) {
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(ex - EDGE_HANDLE / 2, ey - EDGE_HANDLE / 2, EDGE_HANDLE, EDGE_HANDLE);
     }
     ctx.restore();
   }
 
   function hitHandle(px, py) {
+    if (!isEditing || !isEditing()) return null;
     const t = getTransform();
     if (!t.cropRect) return null;
     const base = imageDisplayRect();
@@ -99,9 +114,15 @@ export function mountCropper({ canvas, getEntry, getTransform, onTransformChange
     const y = base.y + t.cropRect.y * ratio;
     const w = t.cropRect.w * ratio;
     const h = t.cropRect.h * ratio;
+    // 角手柄
     const corners = { tl: [x, y], tr: [x + w, y], bl: [x, y + h], br: [x + w, y + h] };
     for (const [name, [hx, hy]] of Object.entries(corners)) {
       if (Math.abs(px - hx) < HANDLE && Math.abs(py - hy) < HANDLE) return name;
+    }
+    // 边中点手柄
+    const edges = { top: [x + w / 2, y], bottom: [x + w / 2, y + h], left: [x, y + h / 2], right: [x + w, y + h / 2] };
+    for (const [name, [ex, ey]] of Object.entries(edges)) {
+      if (Math.abs(px - ex) < EDGE_HANDLE + 2 && Math.abs(py - ey) < EDGE_HANDLE + 2) return name;
     }
     return null;
   }
@@ -116,11 +137,21 @@ export function mountCropper({ canvas, getEntry, getTransform, onTransformChange
     const handle = hitHandle(p.x, p.y);
     dragging = handle ? { handle } : 'move';
     lastPt = p;
+    canvas.style.cursor = handle ? (CURSOR_MAP[handle] || 'move') : 'grabbing';
     canvas.setPointerCapture(e.pointerId);
   }
+  const CURSOR_MAP = {
+    tl: 'nw-resize', tr: 'ne-resize', bl: 'sw-resize', br: 'se-resize',
+    top: 'n-resize', bottom: 's-resize', left: 'w-resize', right: 'e-resize'
+  };
+
   function onMove(e) {
-    if (!dragging) return;
     const p = ptFromEvent(e);
+    if (!dragging) {
+      const h = hitHandle(p.x, p.y);
+      canvas.style.cursor = h ? (CURSOR_MAP[h] || 'move') : 'grab';
+      return;
+    }
     const dx = p.x - lastPt.x;
     const dy = p.y - lastPt.y;
     lastPt = p;
@@ -140,6 +171,10 @@ export function mountCropper({ canvas, getEntry, getTransform, onTransformChange
         case 'tr': r.y += sy; r.w += sx; r.h -= sy; break;
         case 'bl': r.x += sx; r.w -= sx; r.h += sy; break;
         case 'br': r.w += sx; r.h += sy; break;
+        case 'top': r.y += sy; r.h -= sy; break;
+        case 'bottom': r.h += sy; break;
+        case 'left': r.x += sx; r.w -= sx; break;
+        case 'right': r.w += sx; break;
       }
       r.w = Math.max(20, r.w);
       r.h = Math.max(20, r.h);
@@ -149,6 +184,7 @@ export function mountCropper({ canvas, getEntry, getTransform, onTransformChange
   function onUp(e) {
     dragging = null;
     lastPt = null;
+    canvas.style.cursor = '';
     try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
   }
   function onWheel(e) {

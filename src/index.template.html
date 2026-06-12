@@ -10,13 +10,131 @@
            connect-src 'none';
            img-src 'self' data: blob:;
            style-src 'self' 'unsafe-inline'">
-<title>证件复印小工具</title>
+<title>证件复印小助手</title>
 <style>
 /* INLINE:CSS */
 </style>
 </head>
 <body>
+<header class="app-header">
+  <div class="app-header-bg" aria-hidden="true"></div>
+  <div class="app-header-inner">
+    <div class="app-header-brand">
+      <span class="app-header-icon-wrap" aria-hidden="true">
+        <svg class="app-header-icon" viewBox="0 0 24 24" width="28" height="28"
+             fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+          <circle cx="9" cy="11" r="2.2"></circle>
+          <path d="M5 17c0-1.7 1.8-3 4-3s4 1.3 4 3"></path>
+          <path d="M14 9h5M14 12h5"></path>
+        </svg>
+      </span>
+      <div class="app-header-text">
+        <h1 class="app-header-title">证件复印小助手</h1>
+        <p class="app-header-subtitle">
+          <span class="app-header-dot" aria-hidden="true"></span>
+          本地处理 · 隐私安全 · 开源离线
+        </p>
+      </div>
+    </div>
+    <div class="app-header-meta">
+      <button type="button" class="app-header-help" id="tutorial-open" aria-haspopup="dialog" title="使用教程">教程</button>
+      <span class="app-header-version" title="与 git tag 同步">v{{VERSION}}</span>
+      <span class="app-header-author">@{{AUTHOR}}</span>
+    </div>
+  </div>
+</header>
 <div id="app"></div>
+
+<dialog class="tutorial-dialog" id="tutorial-dialog" aria-labelledby="tutorial-title" aria-describedby="tutorial-desc">
+  <header class="tutorial-head">
+    <h2 id="tutorial-title">使用教程</h2>
+    <button type="button" class="tutorial-close" id="tutorial-close" aria-label="关闭教程">×</button>
+  </header>
+  <ol class="tutorial-steps" id="tutorial-desc">
+    <li>
+      <span class="tutorial-num">1</span>
+      <div>
+        <strong>选类型并添加</strong>
+        <p>左侧下拉选证件类型（如 身份证 / 荣誉证书），点 <kbd>＋ 添加</kbd> 可建多张。</p>
+      </div>
+    </li>
+    <li>
+      <span class="tutorial-num">2</span>
+      <div>
+        <strong>上传图片</strong>
+        <p>点卡片上的 <kbd>正面</kbd> / <kbd>背面</kbd> 框上传对应图片；也支持拖入或粘贴。</p>
+      </div>
+    </li>
+    <li>
+      <span class="tutorial-num">3</span>
+      <div>
+        <strong>调整设置</strong>
+        <p>右侧可改水印文字 / 透明度、版式（一页多份 / 上下排列）、复印件感滤镜等。</p>
+      </div>
+    </li>
+    <li>
+      <span class="tutorial-num">4</span>
+      <div>
+        <strong>预览并导出</strong>
+        <p>中间查看实时 A4 效果，点 <kbd>导出 PDF</kbd> / <kbd>PNG</kbd> / <kbd>JPG</kbd> 下载，或用 <kbd>系统打印</kbd> 走真实打印机。</p>
+      </div>
+    </li>
+  </ol>
+  <footer class="tutorial-foot">
+    <span class="tutorial-hint">按 <kbd>Esc</kbd> 关闭</span>
+    <button type="button" class="primary" id="tutorial-ok">我知道了</button>
+  </footer>
+</dialog>
+<script>
+(function () {
+  var dlg = document.getElementById('tutorial-dialog');
+  var openBtn = document.getElementById('tutorial-open');
+  var closeBtn = document.getElementById('tutorial-close');
+  var okBtn = document.getElementById('tutorial-ok');
+  if (!dlg || !openBtn) return;
+  function open() { if (!dlg.open) dlg.showModal(); }
+  function close() { if (dlg.open) dlg.close(); }
+  openBtn.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+  okBtn.addEventListener('click', close);
+  // 点击 dialog 自身（背景）关闭：原生 dialog 默认带 ::backdrop 但点击透明区不关闭；
+  // 我们监听 dialog 自身的 click，判定点中的是否为 dialog 本身（即 ::backdrop）
+  dlg.addEventListener('click', function (e) {
+    var rect = dlg.getBoundingClientRect();
+    if (e.clientX < rect.left || e.clientX > rect.right ||
+        e.clientY < rect.top  || e.clientY > rect.bottom) {
+      close();
+    }
+  });
+  // 首次访问自动弹出
+  try {
+    if (!localStorage.getItem('idcopy_tutorial_seen')) {
+      dlg.showModal();
+      localStorage.setItem('idcopy_tutorial_seen', '1');
+    }
+  } catch (_) {}
+})();
+</script>
+<footer class="app-footer" role="contentinfo">
+  <div class="app-footer-content">
+    <p>
+      <svg class="app-footer-icon" viewBox="0 0 24 24" width="14" height="14"
+           fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <strong>免责声明</strong> · 本 AI 工具由个人独立开发，免费对外开放，仅供技术学习、交流体验使用。
+    </p>
+    <p>未经本人书面授权，严禁复制、封装、二次改造后用于付费售卖、商业服务、流量变现等任何盈利场景。</p>
+    <p>欢迎提交 BUG 反馈、功能优化建议与技术交流，微信：<strong>wyh0429</strong>（添加请备注"工具名称+技术交流"）。</p>
+    <p>本工具仅为技术演示用途，不保障运行稳定性与数据可靠性，不可接入正式生产业务；违规商用及不当使用引发的全部法律、经济责任，均由使用者自行承担。</p>
+  </div>
+  <div class="app-footer-meta">© 2026 @{{AUTHOR}} · v{{VERSION}}</div>
+</footer>
 <script>
 /* INLINE:VENDOR */
 </script>

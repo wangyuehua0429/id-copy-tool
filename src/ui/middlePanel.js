@@ -10,21 +10,25 @@ export function mountMiddlePanel({ root, store, imageStore }) {
 
   const toolbar = document.createElement('div');
   toolbar.className = 'preview-toolbar';
+  const slotSwitcher = document.createElement('div');
+  slotSwitcher.className = 'slot-switcher';
   const previewStack = document.createElement('div');
   previewStack.className = 'preview-stack';
   const cropperWrap = document.createElement('div');
   cropperWrap.className = 'cropper-wrap';
 
-  root.append(toolbar, cropperWrap, previewStack);
+  root.append(toolbar, slotSwitcher, cropperWrap, previewStack);
 
   let cropper = null;
+  let lastCropperKey = null;
+  let isEditingCrop = false;
 
   function activeSlot() {
     const s = store.getState();
     const doc = s.documents.find(d => d.id === s.activeDocId);
     if (!doc) return null;
-    for (const name of Object.keys(doc.slots)) {
-      if (doc.slots[name]) return { doc, slot: name, ref: doc.slots[name] };
+    if (s.activeSlotName && doc.slots[s.activeSlotName]) {
+      return { doc, slot: s.activeSlotName, ref: doc.slots[s.activeSlotName] };
     }
     return null;
   }
@@ -43,6 +47,7 @@ export function mountMiddlePanel({ root, store, imageStore }) {
 
     const globalFilters = store.getState().filters;
     const pdf = exportBtn('导出 PDF', () => toPdf({ plans, imageGetter: id => imageStore.get(id), globalFilters }));
+    pdf.classList.add('primary');
     const png = exportBtn('导出 PNG', () => toPng({ plans, imageGetter: id => imageStore.get(id), globalFilters }));
     const jpg = exportBtn('导出 JPG', () => toJpg({ plans, imageGetter: id => imageStore.get(id), globalFilters }));
     const prn = exportBtn('系统打印', () => printPlans({ plans, imageGetter: id => imageStore.get(id), globalFilters }));
@@ -66,35 +71,65 @@ export function mountMiddlePanel({ root, store, imageStore }) {
           patch: { scale: 1, rotateDeg: 0, offsetX: 0, offsetY: 0, cropRect: null }
         });
       };
+      const curCrop = sel.ref.transform.cropRect;
       const crop = document.createElement('button');
-      crop.textContent = sel.ref.transform.cropRect ? '取消裁剪' : '开始裁剪';
-      crop.onclick = () => {
-        const entry = imageStore.get(sel.ref.imageId);
-        if (!entry) return;
-        const cur = sel.ref.transform.cropRect;
-        if (cur) {
-          store.dispatch({
-            type: 'DOC_SET_SLOT_TRANSFORM', docId: sel.doc.id, slot: sel.slot,
-            patch: { cropRect: null }
-          });
-        } else {
-          // 初始裁剪框：取图像中心 80%
+      if (curCrop && isEditingCrop) {
+        // 编辑中：确定 + 取消
+        crop.textContent = '确定';
+        crop.className = 'primary';
+        crop.onclick = () => {
+          isEditingCrop = false;
+          store.dispatch({ type: 'DOC_SET_SIZE_MODE', docId: sel.doc.id, mode: 'fit' });
+          renderAll();
+        };
+        toolbar.append(rot, crop);
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = '取消';
+        cancelBtn.onclick = () => {
+          isEditingCrop = false;
+          store.dispatch({ type: 'DOC_SET_SLOT_TRANSFORM', docId: sel.doc.id, slot: sel.slot, patch: { cropRect: null } });
+        };
+        toolbar.append(cancelBtn);
+      } else if (curCrop && !isEditingCrop) {
+        // 已确认裁剪：重新裁剪 + 取消裁剪
+        crop.textContent = '重新裁剪';
+        crop.onclick = () => { isEditingCrop = true; renderAll(); };
+        toolbar.append(rot, crop);
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = '取消裁剪';
+        removeBtn.onclick = () => {
+          store.dispatch({ type: 'DOC_SET_SLOT_TRANSFORM', docId: sel.doc.id, slot: sel.slot, patch: { cropRect: null } });
+        };
+        toolbar.append(removeBtn);
+      } else {
+        // 无裁剪：开始裁剪
+        crop.textContent = '开始裁剪';
+        crop.onclick = () => {
+          const entry = imageStore.get(sel.ref.imageId);
+          if (!entry) return;
           const w = entry.naturalWidth * 0.8;
           const h = entry.naturalHeight * 0.8;
-          store.dispatch({
-            type: 'DOC_SET_SLOT_TRANSFORM', docId: sel.doc.id, slot: sel.slot,
-            patch: { cropRect: { x: (entry.naturalWidth - w) / 2, y: (entry.naturalHeight - h) / 2, w, h } }
-          });
-        }
-      };
-      toolbar.append(rot, crop, reset);
+          isEditingCrop = true;
+          store.dispatch({ type: 'DOC_SET_SLOT_TRANSFORM', docId: sel.doc.id, slot: sel.slot,
+            patch: { cropRect: { x: (entry.naturalWidth - w) / 2, y: (entry.naturalHeight - h) / 2, w, h } } });
+        };
+        toolbar.append(rot, crop);
+      }
+      toolbar.append(reset);
     }
   }
 
   function renderCropper() {
+    const sel = activeSlot();
+    const key = sel ? `${sel.doc.id}/${sel.slot}` : null;
+    if (key !== lastCropperKey) isEditingCrop = false;
+    if (key === lastCropperKey && cropper) {
+      cropper.redraw();
+      return;
+    }
     cropperWrap.replaceChildren();
     if (cropper) { cropper.destroy(); cropper = null; }
-    const sel = activeSlot();
+    lastCropperKey = key;
     if (!sel) return;
     const canvas = document.createElement('canvas');
     canvas.className = 'cropper-canvas';
@@ -107,9 +142,45 @@ export function mountMiddlePanel({ root, store, imageStore }) {
         store.dispatch({
           type: 'DOC_SET_SLOT_TRANSFORM', docId: sel.doc.id, slot: sel.slot, patch
         });
-      }
+      },
+      isEditing: () => isEditingCrop
     });
     cropper.redraw();
+  }
+
+  function renderSlotSwitcher() {
+    slotSwitcher.replaceChildren();
+    const s = store.getState();
+    const doc = s.documents.find(d => d.id === s.activeDocId);
+    if (!doc) return;
+
+    const SLOT_LABEL = { front: '正面', back: '背面' };
+    const slotLabel = (name) => SLOT_LABEL[name] || name;
+
+    for (const name of Object.keys(doc.slots)) {
+      const slot = doc.slots[name];
+      const thumb = document.createElement('div');
+      thumb.className = 'slot-switch-thumb' + (s.activeSlotName === name ? ' active' : '');
+      thumb.title = slotLabel(name);
+      thumb.onclick = (e) => {
+        e.stopPropagation();
+        store.dispatch({ type: 'ACTIVE_SLOT_SET', slotName: name });
+      };
+
+      if (slot) {
+        const entry = imageStore.get(slot.imageId);
+        if (entry) {
+          const img = document.createElement('img');
+          img.src = entry.url;
+          thumb.append(img);
+        }
+      }
+
+      const label = document.createElement('span');
+      label.textContent = slotLabel(name);
+      thumb.append(label);
+      slotSwitcher.append(thumb);
+    }
   }
 
   function computePlans() {
@@ -141,6 +212,7 @@ export function mountMiddlePanel({ root, store, imageStore }) {
 
   function renderAll() {
     renderToolbar();
+    renderSlotSwitcher();
     renderCropper();
     renderPreview();
   }

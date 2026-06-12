@@ -8,7 +8,7 @@ describe('resolveText — 占位符替换', () => {
       { ...DEFAULT_WATERMARK, project: 'XYZ', includeDate: true },
       new Date('2026-06-12T00:00:00')
     );
-    expect(text).toBe('仅供XYZ投标使用 2026-06-12');
+    expect(text).toBe('仅供XYZ投标使用\n2026-06-12');
   });
 
   it('includeDate=false 时不出现日期', () => {
@@ -43,25 +43,28 @@ describe('drawTo — Canvas 调用', () => {
     };
   });
 
-  it('绘制时设置颜色、透明度、字号', () => {
+  it('绘制时设置颜色、透明度、字号（分辨率无关）', () => {
     drawTo(ctx, DEFAULT_WATERMARK, { wMm: 210, hMm: 297 }, 3.78, new Date('2026-06-12'));
     expect(ctx._fill).toBe(DEFAULT_WATERMARK.color);
     expect(ctx._alpha).toBeCloseTo(DEFAULT_WATERMARK.opacity);
-    expect(ctx._font).toMatch(/\b14px\b/);
+    // fontSize=14, scale=3.78/(96/25.4*0.7)≈1.428, rendered≈20px
+    expect(ctx._font).toMatch(/\b2\d\.?\d*px\b/);
     expect(ctx.fillText).toHaveBeenCalled();
   });
 
-  it('对角平铺至少绘制 5 次以上文字', () => {
+  it('对角平铺至少绘制 10 次以上文字', () => {
     drawTo(ctx, DEFAULT_WATERMARK, { wMm: 210, hMm: 297 }, 3.78, new Date('2026-06-12'));
-    expect(ctx.fillText.mock.calls.length).toBeGreaterThan(5);
+    // 2-line text, each grid cell calls fillText twice
+    expect(ctx.fillText.mock.calls.length).toBeGreaterThan(9);
   });
 
-  it('opacity / fontSize 越界自动夹紧', () => {
+  it('opacity / fontSize 越界自动夹紧（分辨率无关）', () => {
     const cfg = { ...DEFAULT_WATERMARK, opacity: 5, fontSize: 999 };
     drawTo(ctx, cfg, { wMm: 210, hMm: 297 }, 3.78, new Date('2026-06-12'));
     expect(ctx._alpha).toBeLessThanOrEqual(1);
     const sizeMatch = ctx._font.match(/(\d+)px/);
     expect(sizeMatch).not.toBeNull();
-    expect(parseInt(sizeMatch[1], 10)).toBeLessThanOrEqual(200);
+    // 999 clamped → 200, then scaled ≈ 285px
+    expect(parseInt(sizeMatch[1], 10)).toBeGreaterThan(200);
   });
 });

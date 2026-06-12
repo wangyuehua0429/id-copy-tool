@@ -27,6 +27,15 @@ mountRightPanel({ root: right, store, templates });
 // 模板从 LocalStorage 同步初始列表
 store.dispatch({ type: 'TEMPLATES_SET', templates: templates.list() });
 
+// 持久化水印、版式、滤镜设置到 localStorage
+store.subscribe((state) => {
+  try {
+    localStorage.setItem('idcopy_watermark', JSON.stringify(state.watermark));
+    localStorage.setItem('idcopy_layout', JSON.stringify(state.layout));
+    localStorage.setItem('idcopy_filters', JSON.stringify(state.filters));
+  } catch (_) {}
+});
+
 // 刷新前清理图片（防止 OOM）
 window.addEventListener('beforeunload', () => imageStore.clear());
 

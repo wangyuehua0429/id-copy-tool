@@ -1,5 +1,8 @@
 import { drawTo as drawWatermark } from './watermark.js';
 
+// 灰度图缓存：避免每次 render 都重复做像素转换
+const grayCache = new Map();
+
 // renderPage(plan, { mmPerPx, imageGetter, globalFilters, dateNow }) → HTMLCanvasElement
 export function renderPage(plan, { mmPerPx, imageGetter, globalFilters = null, dateNow = new Date() }) {
   const canvas = document.createElement('canvas');
@@ -21,6 +24,25 @@ export function renderPage(plan, { mmPerPx, imageGetter, globalFilters = null, d
   }
 
   return canvas;
+}
+
+function grayFromCache(bitmap, sx, sy, sw, sh) {
+  const key = `${sx},${sy},${sw},${sh}`;
+  let entry = grayCache.get(key);
+  if (entry && entry.bitmap === bitmap) return entry.canvas;
+  if (grayCache.size > 12) grayCache.clear();
+  const off = document.createElement('canvas');
+  off.width = sw; off.height = sh;
+  const offCtx = off.getContext('2d');
+  offCtx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, sw, sh);
+  const data = offCtx.getImageData(0, 0, sw, sh).data;
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+    data[i] = data[i + 1] = data[i + 2] = gray;
+  }
+  offCtx.putImageData(new ImageData(data, sw, sh), 0, 0);
+  grayCache.set(key, { bitmap, canvas: off });
+  return off;
 }
 
 function drawItem(ctx, item, imageGetter, mmPerPx, globalFilters) {
@@ -59,12 +81,19 @@ function drawItem(ctx, item, imageGetter, mmPerPx, globalFilters) {
   ctx.rect(dx, dy, dw, dh);
   ctx.clip();
 
-  // 应用 filter（CSS filter on Canvas — Chrome/Edge/Safari/Firefox 都支持）
+  // brightness / contrast 用 CSS filter
   const filterParts = [];
   if (f.brightness !== 1) filterParts.push(`brightness(${f.brightness})`);
   if (f.contrast   !== 1) filterParts.push(`contrast(${f.contrast})`);
-  if (f.grayscale)        filterParts.push('grayscale(1)');
   ctx.filter = filterParts.length ? filterParts.join(' ') : 'none';
+
+  // 灰度：用离屏 canvas 做像素级转换（带缓存，避免重复计算）
+  let source = entry.bitmap;
+  let sx = src.x, sy = src.y, sw = src.w, sh = src.h;
+  if (f.grayscale) {
+    source = grayFromCache(entry.bitmap, sx, sy, sw, sh);
+    sx = 0; sy = 0;
+  }
 
   // 平移到目标中心，旋转，绘制
   ctx.translate(dx + dw / 2 + t.offsetX, dy + dh / 2 + t.offsetY);
@@ -72,8 +101,8 @@ function drawItem(ctx, item, imageGetter, mmPerPx, globalFilters) {
   ctx.scale(t.scale || 1, t.scale || 1);
 
   ctx.drawImage(
-    entry.bitmap,
-    src.x, src.y, src.w, src.h,
+    source,
+    sx, sy, sw, sh,
     -dw / 2, -dh / 2, dw, dh
   );
 

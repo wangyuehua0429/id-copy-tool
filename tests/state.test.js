@@ -37,7 +37,7 @@ describe('createStore — DOC actions', () => {
     const doc = store.getState().documents[0];
     expect(doc.kind).toBe('diploma');
     expect(doc.sizeMode).toBe('fit');
-    expect(doc.physicalSize).toEqual({ wMm: 285, hMm: 210 });
+    expect(doc.physicalSize).toEqual({ wMm: 297, hMm: 210 });
   });
 
   it('DOC_SET_SIZE_MODE 允许用户强制切换 fixed/fit', () => {

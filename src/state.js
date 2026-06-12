@@ -32,14 +32,23 @@ function newSlot(imageId) {
   };
 }
 
+function loadPersisted(key, defaults) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return { ...defaults, ...JSON.parse(raw) };
+  } catch (_) {}
+  return { ...defaults };
+}
+
 function initialState() {
   return {
     documents: [],
-    layout: { ...DEFAULT_LAYOUT },
-    watermark: { ...DEFAULT_WATERMARK },
-    filters: { ...DEFAULT_FILTERS },
+    layout: loadPersisted('idcopy_layout', DEFAULT_LAYOUT),
+    watermark: loadPersisted('idcopy_watermark', DEFAULT_WATERMARK),
+    filters: loadPersisted('idcopy_filters', DEFAULT_FILTERS),
     templates: [],
-    activeDocId: null
+    activeDocId: null,
+    activeSlotName: null
   };
 }
 
@@ -72,15 +81,21 @@ function reducer(state, action) {
         physicalSize: { wMm: clampSize(action.wMm), hMm: clampSize(action.hMm) }
       }));
     case 'DOC_ADD_SLOT':
-      return mapDoc(state, action.docId, (d) => ({
-        ...d,
-        slots: { ...d.slots, [action.slot]: newSlot(action.imageId) }
-      }));
+      return {
+        ...mapDoc(state, action.docId, (d) => ({
+          ...d,
+          slots: { ...d.slots, [action.slot]: newSlot(action.imageId) }
+        })),
+        activeSlotName: action.slot
+      };
     case 'DOC_REMOVE_SLOT':
-      return mapDoc(state, action.docId, (d) => ({
-        ...d,
-        slots: { ...d.slots, [action.slot]: null }
-      }));
+      return {
+        ...mapDoc(state, action.docId, (d) => ({
+          ...d,
+          slots: { ...d.slots, [action.slot]: null }
+        })),
+        activeSlotName: state.activeSlotName === action.slot ? null : state.activeSlotName
+      };
     case 'DOC_SET_SLOT_TRANSFORM':
       return mapSlot(state, action.docId, action.slot, (s) => ({
         ...s, transform: { ...s.transform, ...action.patch }
@@ -116,7 +131,9 @@ function reducer(state, action) {
     case 'TEMPLATES_SET':
       return { ...state, templates: action.templates };
     case 'ACTIVE_SET':
-      return { ...state, activeDocId: action.docId };
+      return { ...state, activeDocId: action.docId, activeSlotName: null };
+    case 'ACTIVE_SLOT_SET':
+      return { ...state, activeSlotName: action.slotName };
     default:
       return state;
   }
