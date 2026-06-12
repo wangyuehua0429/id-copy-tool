@@ -81,8 +81,15 @@ function docCard(doc, active, store, imageStore) {
   return card;
 }
 
+const SLOT_LABEL = {
+  front: '正面',
+  back:  '背面'
+};
+const slotLabel = (name) => SLOT_LABEL[name] || name;
+
 function slotZone(doc, slot, store, imageStore) {
-  const zone = h('div', { class: 'slot-thumb', title: slot, onclick: (e) => e.stopPropagation() });
+  const label = slotLabel(slot);
+  const zone = h('div', { class: 'slot-thumb', title: label, onclick: (e) => e.stopPropagation() });
   const cur = doc.slots[slot];
   if (cur) {
     const entry = imageStore.get(cur.imageId);
@@ -91,10 +98,10 @@ function slotZone(doc, slot, store, imageStore) {
       img.src = entry.url;
       zone.append(img);
     } else {
-      zone.append(document.createTextNode(slot));
+      zone.append(document.createTextNode(label));
     }
   } else {
-    zone.append(document.createTextNode(slot));
+    zone.append(document.createTextNode(label));
   }
   bindUploadZone(zone, {
     onFile: async (file) => {

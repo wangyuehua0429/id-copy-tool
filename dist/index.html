@@ -1033,8 +1033,14 @@ label { font-size: 12px; color: var(--muted); }
     card.append(thumbs);
     return card;
   }
+  var SLOT_LABEL = {
+    front: "\u6B63\u9762",
+    back: "\u80CC\u9762"
+  };
+  var slotLabel = (name) => SLOT_LABEL[name] || name;
   function slotZone(doc, slot, store2, imageStore2) {
-    const zone = h("div", { class: "slot-thumb", title: slot, onclick: (e) => e.stopPropagation() });
+    const label = slotLabel(slot);
+    const zone = h("div", { class: "slot-thumb", title: label, onclick: (e) => e.stopPropagation() });
     const cur = doc.slots[slot];
     if (cur) {
       const entry = imageStore2.get(cur.imageId);
@@ -1043,10 +1049,10 @@ label { font-size: 12px; color: var(--muted); }
         img.src = entry.url;
         zone.append(img);
       } else {
-        zone.append(document.createTextNode(slot));
+        zone.append(document.createTextNode(label));
       }
     } else {
-      zone.append(document.createTextNode(slot));
+      zone.append(document.createTextNode(label));
     }
     bindUploadZone(zone, {
       onFile: async (file) => {
