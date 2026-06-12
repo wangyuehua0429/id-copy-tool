@@ -34,7 +34,8 @@ function cleanLayout(raw = {}) {
   return {
     type,
     perPage: num(raw.perPage, DEFAULT_LAYOUT.perPage, 1, 12),
-    margin:  num(raw.margin,  DEFAULT_LAYOUT.margin,  0, 50)
+    margin:  num(raw.margin,  DEFAULT_LAYOUT.margin,  0, 50),
+    gap:     num(raw.gap,     DEFAULT_LAYOUT.gap,     0, 80)
   };
 }
 
