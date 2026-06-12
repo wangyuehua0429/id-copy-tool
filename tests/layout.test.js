@@ -97,6 +97,22 @@ describe('compose — multi 版式（fixed 类）', () => {
     });
     expect(plans).toHaveLength(2);
   });
+
+  it('5 个不同身份证 perPage=3 → 页 1 有 6 项，页 2 有 4 项（不复制 d3）', () => {
+    const docs = Array.from({ length: 5 }, (_, i) => idCardDoc('d' + i, 'f' + i, 'b' + i));
+    const plans = compose({
+      documents: docs,
+      layout: layoutCfg({ type: 'multi', perPage: 3 }),
+      watermark: wmCfg()
+    });
+    expect(plans).toHaveLength(2);
+    // 页 1：d0, d1, d2 各 2 项 = 6 项
+    expect(plans[0].items).toHaveLength(6);
+    // 页 2：d3, d4 各 2 项 = 4 项（不复制）
+    expect(plans[1].items).toHaveLength(4);
+    const page2Docs = new Set(plans[1].items.map(i => i.docId));
+    expect(page2Docs).toEqual(new Set(['d3', 'd4']));
+  });
 });
 
 describe('compose — fit 类自适应缩放', () => {

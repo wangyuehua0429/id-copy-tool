@@ -1,5 +1,8 @@
 import { A4 } from './constants.js';
 
+// 版面各元素之间的间距（毫米），统一在版式代码中引用
+const GAP_MM = 6;
+
 // items: 拆解 documents → 平铺的渲染单元，保留 fixed/fit 标记
 function flatten(documents) {
   const out = [];
@@ -53,7 +56,7 @@ function composeStack({ flat, layout, wm }) {
   let cur = newPage(attachWm(wm));
   let used = 0;
   for (const it of sized) {
-    const needed = it.hMm + (cur.items.length ? 6 : 0);
+    const needed = it.hMm + (cur.items.length ? GAP_MM : 0);
     if (used + needed > innerH && cur.items.length) {
       pages.push(cur);
       cur = newPage(attachWm(wm));
@@ -75,10 +78,9 @@ function composeStack({ flat, layout, wm }) {
 function composeSide({ flat, layout, wm }) {
   // 两列布局：左列放奇数序号项，右列放偶数；每行高度 = 该行两项中较大者
   const margin = layout.margin;
-  const gap = 6;
   const innerW = A4.wMm - 2 * margin;
   const innerH = A4.hMm - 2 * margin;
-  const colW = (innerW - gap) / 2;
+  const colW = (innerW - GAP_MM) / 2;
 
   const sized = flat.map(it => ({ ...it, ...sizeForItem(it, colW, innerH) }));
 
@@ -105,24 +107,47 @@ function composeSide({ flat, layout, wm }) {
       cur.items.push({
         sourceId: right.sourceId, docId: right.docId, slot: right.slot,
         transform: right.transform, filters: right.filters,
-        xMm: margin + colW + gap + (colW - right.wMm) / 2,
+        xMm: margin + colW + GAP_MM + (colW - right.wMm) / 2,
         yMm: margin + cursorY,
         wMm: right.wMm, hMm: right.hMm
       });
     }
-    cursorY += rowH + gap;
+    cursorY += rowH + GAP_MM;
   }
   if (cur.items.length) pages.push(cur);
   return pages;
 }
 
+// 把一组"按行排列的文档"绘制到一张新页上。chunk 元素是数组（一个 doc 的所有 slot）。
+function composeChunkToPage(chunk, { margin, innerW, innerH, wm }) {
+  const cur = newPage(attachWm(wm));
+  const rowH = (innerH - GAP_MM * (chunk.length - 1)) / chunk.length;
+  chunk.forEach((docItems, rowIdx) => {
+    const rowY = margin + rowIdx * (rowH + GAP_MM);
+    // 同 doc 的 slot 横向排开
+    const slotW = (innerW - GAP_MM * (docItems.length - 1)) / docItems.length;
+    docItems.forEach((it, colIdx) => {
+      const { wMm, hMm } = sizeForItem(it, slotW, rowH);
+      const slotX = margin + colIdx * (slotW + GAP_MM);
+      cur.items.push({
+        sourceId: it.sourceId, docId: it.docId, slot: it.slot,
+        transform: it.transform, filters: it.filters,
+        xMm: slotX + (slotW - wMm) / 2,
+        yMm: rowY + (rowH - hMm) / 2,
+        wMm, hMm
+      });
+    });
+  });
+  return cur;
+}
+
 function composeMulti({ flat, layout, wm }) {
   // perPage = 每页"份数"。一份 = 同一 docId 的所有 slot。
-  const perPage = Math.max(1, layout.perPage | 0);
+  const perPage = Math.max(1, Math.trunc(layout.perPage) || 1);
   const margin = layout.margin;
-  const gap = 6;
   const innerW = A4.wMm - 2 * margin;
   const innerH = A4.hMm - 2 * margin;
+  const pageCtx = { margin, innerW, innerH, wm };
 
   // 按 doc 分组，保留 doc 顺序
   const byDoc = [];
@@ -135,38 +160,18 @@ function composeMulti({ flat, layout, wm }) {
     byDoc[seen.get(it.docId)].push(it);
   }
 
+  // 单文档 + perPage>1 = 用户希望在一页上印 N 份该证件（复印常见用法），因此复制到 perPage 份
+  if (byDoc.length === 1 && perPage > 1) {
+    const single = byDoc[0];
+    const chunk = Array.from({ length: perPage }, () => single);
+    return [composeChunkToPage(chunk, pageCtx)];
+  }
+
+  // 多文档：perPage = "单页最多放的文档数"。最后一页若不足，保留实际数量，不复制、不补空
   const pages = [];
   for (let i = 0; i < byDoc.length; i += perPage) {
-    let chunk = byDoc.slice(i, i + perPage);
-    // 若 chunk 未满 perPage，从 chunk 头部循环填充至 perPage 份
-    if (chunk.length > 0 && chunk.length < perPage) {
-      const filled = [...chunk];
-      let j = 0;
-      while (filled.length < perPage) {
-        filled.push(chunk[j % chunk.length]);
-        j++;
-      }
-      chunk = filled;
-    }
-    const cur = newPage(attachWm(wm));
-    const rowH = (innerH - gap * (chunk.length - 1)) / chunk.length;
-    chunk.forEach((docItems, rowIdx) => {
-      const rowY = margin + rowIdx * (rowH + gap);
-      // 同 doc 的 slot 横向排开
-      const slotW = (innerW - gap * (docItems.length - 1)) / docItems.length;
-      docItems.forEach((it, colIdx) => {
-        const { wMm, hMm } = sizeForItem(it, slotW, rowH);
-        const slotX = margin + colIdx * (slotW + gap);
-        cur.items.push({
-          sourceId: it.sourceId, docId: it.docId, slot: it.slot,
-          transform: it.transform, filters: it.filters,
-          xMm: slotX + (slotW - wMm) / 2,
-          yMm: rowY + (rowH - hMm) / 2,
-          wMm, hMm
-        });
-      });
-    });
-    pages.push(cur);
+    const chunk = byDoc.slice(i, i + perPage);
+    pages.push(composeChunkToPage(chunk, pageCtx));
   }
   return pages;
 }
