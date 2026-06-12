@@ -47,7 +47,7 @@ describe('drawTo — Canvas 调用', () => {
     drawTo(ctx, DEFAULT_WATERMARK, { wMm: 210, hMm: 297 }, 3.78, new Date('2026-06-12'));
     expect(ctx._fill).toBe(DEFAULT_WATERMARK.color);
     expect(ctx._alpha).toBeCloseTo(DEFAULT_WATERMARK.opacity);
-    expect(ctx._font).toMatch(/14/);
+    expect(ctx._font).toMatch(/\b14px\b/);
     expect(ctx.fillText).toHaveBeenCalled();
   });
 
@@ -60,6 +60,8 @@ describe('drawTo — Canvas 调用', () => {
     const cfg = { ...DEFAULT_WATERMARK, opacity: 5, fontSize: 999 };
     drawTo(ctx, cfg, { wMm: 210, hMm: 297 }, 3.78, new Date('2026-06-12'));
     expect(ctx._alpha).toBeLessThanOrEqual(1);
-    expect(parseInt(ctx._font, 10)).toBeLessThanOrEqual(200);
+    const sizeMatch = ctx._font.match(/(\d+)px/);
+    expect(sizeMatch).not.toBeNull();
+    expect(parseInt(sizeMatch[1], 10)).toBeLessThanOrEqual(200);
   });
 });
