@@ -1374,10 +1374,10 @@ label { font-size: 12px; color: var(--muted); }
     const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", quality));
     return new Uint8Array(await blob.arrayBuffer());
   }
-  async function toPng({ plans, imageGetter, dpi = 300, filename = "id-copy.png" }) {
+  async function toPng({ plans, imageGetter, globalFilters = null, dpi = 300, filename = "id-copy.png" }) {
     if (!plans.length) throw new Error("\u8BF7\u81F3\u5C11\u6DFB\u52A0\u4E00\u5F20\u8BC1\u4EF6\u56FE");
     const mmPerPx = dpiToMmPerPx(dpi);
-    const canvases = plans.map((p) => renderPage(p, { mmPerPx, imageGetter }));
+    const canvases = plans.map((p) => renderPage(p, { mmPerPx, imageGetter, globalFilters }));
     const totalH = canvases.reduce((s, c) => s + c.height, 0);
     const w = canvases[0].width;
     const out = document.createElement("canvas");
@@ -1394,10 +1394,10 @@ label { font-size: 12px; color: var(--muted); }
     const blob = await new Promise((res) => out.toBlob(res, "image/png"));
     downloadBlob(blob, filename);
   }
-  async function toJpg({ plans, imageGetter, dpi = 300, quality = 0.92, filename = "id-copy.jpg" }) {
+  async function toJpg({ plans, imageGetter, globalFilters = null, dpi = 300, quality = 0.92, filename = "id-copy.jpg" }) {
     if (!plans.length) throw new Error("\u8BF7\u81F3\u5C11\u6DFB\u52A0\u4E00\u5F20\u8BC1\u4EF6\u56FE");
     const mmPerPx = dpiToMmPerPx(dpi);
-    const canvases = plans.map((p) => renderPage(p, { mmPerPx, imageGetter }));
+    const canvases = plans.map((p) => renderPage(p, { mmPerPx, imageGetter, globalFilters }));
     const totalH = canvases.reduce((s, c) => s + c.height, 0);
     const w = canvases[0].width;
     const out = document.createElement("canvas");
@@ -1414,13 +1414,13 @@ label { font-size: 12px; color: var(--muted); }
     const blob = await new Promise((res) => out.toBlob(res, "image/jpeg", quality));
     downloadBlob(blob, filename);
   }
-  async function toPdf({ plans, imageGetter, dpi = 300, filename = "id-copy.pdf" }) {
+  async function toPdf({ plans, imageGetter, globalFilters = null, dpi = 300, filename = "id-copy.pdf" }) {
     if (!plans.length) throw new Error("\u8BF7\u81F3\u5C11\u6DFB\u52A0\u4E00\u5F20\u8BC1\u4EF6\u56FE");
     const { PDFDocument } = getPDFLib();
     const mmPerPx = dpiToMmPerPx(dpi);
     const pdfDoc = await PDFDocument.create();
     for (const plan of plans) {
-      const canvas = renderPage(plan, { mmPerPx, imageGetter });
+      const canvas = renderPage(plan, { mmPerPx, imageGetter, globalFilters });
       const jpgBytes = await canvasToJpgBytes(canvas, 0.92);
       const img = await pdfDoc.embedJpg(jpgBytes);
       const pageW = plan.pageSize.wMm / MM_PER_PT;
@@ -1431,7 +1431,7 @@ label { font-size: 12px; color: var(--muted); }
     const bytes = await pdfDoc.save();
     downloadBlob(new Blob([bytes], { type: "application/pdf" }), filename);
   }
-  function printPlans({ plans, imageGetter, dpi = 200 }) {
+  function printPlans({ plans, imageGetter, globalFilters = null, dpi = 200 }) {
     if (!plans.length) {
       alert("\u8BF7\u81F3\u5C11\u6DFB\u52A0\u4E00\u5F20\u8BC1\u4EF6\u56FE");
       return;
@@ -1451,7 +1451,7 @@ label { font-size: 12px; color: var(--muted); }
   </style></head><body></body></html>`);
     doc.close();
     for (const plan of plans) {
-      const canvas = renderPage(plan, { mmPerPx, imageGetter });
+      const canvas = renderPage(plan, { mmPerPx, imageGetter, globalFilters });
       const div = doc.createElement("div");
       div.className = "page";
       const img = doc.createElement("img");
@@ -1498,10 +1498,11 @@ label { font-size: 12px; color: var(--muted); }
       };
       const plans = computePlans();
       const disabled = plans.length === 0;
-      const pdf = exportBtn("\u5BFC\u51FA PDF", () => toPdf({ plans, imageGetter: (id) => imageStore2.get(id) }));
-      const png = exportBtn("\u5BFC\u51FA PNG", () => toPng({ plans, imageGetter: (id) => imageStore2.get(id) }));
-      const jpg = exportBtn("\u5BFC\u51FA JPG", () => toJpg({ plans, imageGetter: (id) => imageStore2.get(id) }));
-      const prn = exportBtn("\u7CFB\u7EDF\u6253\u5370", () => printPlans({ plans, imageGetter: (id) => imageStore2.get(id) }));
+      const globalFilters = store2.getState().filters;
+      const pdf = exportBtn("\u5BFC\u51FA PDF", () => toPdf({ plans, imageGetter: (id) => imageStore2.get(id), globalFilters }));
+      const png = exportBtn("\u5BFC\u51FA PNG", () => toPng({ plans, imageGetter: (id) => imageStore2.get(id), globalFilters }));
+      const jpg = exportBtn("\u5BFC\u51FA JPG", () => toJpg({ plans, imageGetter: (id) => imageStore2.get(id), globalFilters }));
+      const prn = exportBtn("\u7CFB\u7EDF\u6253\u5370", () => printPlans({ plans, imageGetter: (id) => imageStore2.get(id), globalFilters }));
       for (const b of [pdf, png, jpg, prn]) b.disabled = disabled;
       toolbar.append(pdf, png, jpg, prn);
       if (sel) {

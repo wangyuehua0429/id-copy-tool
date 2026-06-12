@@ -41,10 +41,11 @@ export function mountMiddlePanel({ root, store, imageStore }) {
     const plans = computePlans();
     const disabled = plans.length === 0;
 
-    const pdf = exportBtn('导出 PDF', () => toPdf({ plans, imageGetter: id => imageStore.get(id) }));
-    const png = exportBtn('导出 PNG', () => toPng({ plans, imageGetter: id => imageStore.get(id) }));
-    const jpg = exportBtn('导出 JPG', () => toJpg({ plans, imageGetter: id => imageStore.get(id) }));
-    const prn = exportBtn('系统打印', () => printPlans({ plans, imageGetter: id => imageStore.get(id) }));
+    const globalFilters = store.getState().filters;
+    const pdf = exportBtn('导出 PDF', () => toPdf({ plans, imageGetter: id => imageStore.get(id), globalFilters }));
+    const png = exportBtn('导出 PNG', () => toPng({ plans, imageGetter: id => imageStore.get(id), globalFilters }));
+    const jpg = exportBtn('导出 JPG', () => toJpg({ plans, imageGetter: id => imageStore.get(id), globalFilters }));
+    const prn = exportBtn('系统打印', () => printPlans({ plans, imageGetter: id => imageStore.get(id), globalFilters }));
     for (const b of [pdf, png, jpg, prn]) b.disabled = disabled;
     toolbar.append(pdf, png, jpg, prn);
 

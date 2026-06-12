@@ -27,11 +27,11 @@ async function canvasToJpgBytes(canvas, quality = 0.92) {
   return new Uint8Array(await blob.arrayBuffer());
 }
 
-export async function toPng({ plans, imageGetter, dpi = 300, filename = 'id-copy.png' }) {
+export async function toPng({ plans, imageGetter, globalFilters = null, dpi = 300, filename = 'id-copy.png' }) {
   if (!plans.length) throw new Error('请至少添加一张证件图');
   const mmPerPx = dpiToMmPerPx(dpi);
   // 多页 PNG：纵向拼接成一张大图
-  const canvases = plans.map(p => renderPage(p, { mmPerPx, imageGetter }));
+  const canvases = plans.map(p => renderPage(p, { mmPerPx, imageGetter, globalFilters }));
   const totalH = canvases.reduce((s, c) => s + c.height, 0);
   const w = canvases[0].width;
   const out = document.createElement('canvas');
@@ -49,10 +49,10 @@ export async function toPng({ plans, imageGetter, dpi = 300, filename = 'id-copy
   downloadBlob(blob, filename);
 }
 
-export async function toJpg({ plans, imageGetter, dpi = 300, quality = 0.92, filename = 'id-copy.jpg' }) {
+export async function toJpg({ plans, imageGetter, globalFilters = null, dpi = 300, quality = 0.92, filename = 'id-copy.jpg' }) {
   if (!plans.length) throw new Error('请至少添加一张证件图');
   const mmPerPx = dpiToMmPerPx(dpi);
-  const canvases = plans.map(p => renderPage(p, { mmPerPx, imageGetter }));
+  const canvases = plans.map(p => renderPage(p, { mmPerPx, imageGetter, globalFilters }));
   const totalH = canvases.reduce((s, c) => s + c.height, 0);
   const w = canvases[0].width;
   const out = document.createElement('canvas');
@@ -67,14 +67,14 @@ export async function toJpg({ plans, imageGetter, dpi = 300, quality = 0.92, fil
   downloadBlob(blob, filename);
 }
 
-export async function toPdf({ plans, imageGetter, dpi = 300, filename = 'id-copy.pdf' }) {
+export async function toPdf({ plans, imageGetter, globalFilters = null, dpi = 300, filename = 'id-copy.pdf' }) {
   if (!plans.length) throw new Error('请至少添加一张证件图');
   const { PDFDocument } = getPDFLib();
   const mmPerPx = dpiToMmPerPx(dpi);
 
   const pdfDoc = await PDFDocument.create();
   for (const plan of plans) {
-    const canvas = renderPage(plan, { mmPerPx, imageGetter });
+    const canvas = renderPage(plan, { mmPerPx, imageGetter, globalFilters });
     const jpgBytes = await canvasToJpgBytes(canvas, 0.92);
     const img = await pdfDoc.embedJpg(jpgBytes);
 
@@ -88,7 +88,7 @@ export async function toPdf({ plans, imageGetter, dpi = 300, filename = 'id-copy
 }
 
 // 调起系统打印对话框：把所有页面以 mm 为单位插入一个临时 iframe，应用 @page A4。
-export function printPlans({ plans, imageGetter, dpi = 200 }) {
+export function printPlans({ plans, imageGetter, globalFilters = null, dpi = 200 }) {
   if (!plans.length) {
     alert('请至少添加一张证件图');
     return;
@@ -109,7 +109,7 @@ export function printPlans({ plans, imageGetter, dpi = 200 }) {
   doc.close();
 
   for (const plan of plans) {
-    const canvas = renderPage(plan, { mmPerPx, imageGetter });
+    const canvas = renderPage(plan, { mmPerPx, imageGetter, globalFilters });
     const div = doc.createElement('div');
     div.className = 'page';
     const img = doc.createElement('img');
