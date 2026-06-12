@@ -1,6 +1,6 @@
 export const A4 = { wMm: 210, hMm: 297 };
 
-export const MM_PER_PT = 72 / 25.4;  // pdf-lib 用 pt；1 inch = 25.4 mm = 72 pt
+export const PT_PER_MM = 72 / 25.4;  // pdf-lib 用 pt；1 inch = 25.4 mm = 72 pt
 
 const idCardSize  = { wMm: 85.6, hMm: 54 };
 const passportSize = { wMm: 125,  hMm: 88 };

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  A4, DOCUMENT_KINDS, DEFAULT_WATERMARK, DEFAULT_LAYOUT, DEFAULT_FILTERS, MM_PER_PT
+  A4, DOCUMENT_KINDS, DEFAULT_WATERMARK, DEFAULT_LAYOUT, DEFAULT_FILTERS, PT_PER_MM
 } from '../src/constants.js';
 
 describe('constants', () => {
@@ -33,6 +33,6 @@ describe('constants', () => {
   });
 
   it('PDF 单位换算正确（1 mm ≈ 2.8346 pt）', () => {
-    expect(MM_PER_PT).toBeCloseTo(72 / 25.4, 3);
+    expect(PT_PER_MM).toBeCloseTo(72 / 25.4, 3);
   });
 });

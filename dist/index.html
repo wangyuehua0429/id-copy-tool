@@ -151,11 +151,11 @@ label { font-size: 12px; color: var(--muted); }
   };
 
   // src/constants.js
-  var A4, MM_PER_PT, idCardSize, passportSize, DOCUMENT_KINDS, DEFAULT_WATERMARK, DEFAULT_LAYOUT, DEFAULT_FILTERS, DEFAULT_TRANSFORM;
+  var A4, PT_PER_MM, idCardSize, passportSize, DOCUMENT_KINDS, DEFAULT_WATERMARK, DEFAULT_LAYOUT, DEFAULT_FILTERS, DEFAULT_TRANSFORM;
   var init_constants = __esm({
     "src/constants.js"() {
       A4 = { wMm: 210, hMm: 297 };
-      MM_PER_PT = 72 / 25.4;
+      PT_PER_MM = 72 / 25.4;
       idCardSize = { wMm: 85.6, hMm: 54 };
       passportSize = { wMm: 125, hMm: 88 };
       DOCUMENT_KINDS = {
@@ -1423,8 +1423,8 @@ label { font-size: 12px; color: var(--muted); }
       const canvas = renderPage(plan, { mmPerPx, imageGetter, globalFilters });
       const jpgBytes = await canvasToJpgBytes(canvas, 0.92);
       const img = await pdfDoc.embedJpg(jpgBytes);
-      const pageW = plan.pageSize.wMm / MM_PER_PT;
-      const pageH = plan.pageSize.hMm / MM_PER_PT;
+      const pageW = plan.pageSize.wMm * PT_PER_MM;
+      const pageH = plan.pageSize.hMm * PT_PER_MM;
       const page = pdfDoc.addPage([pageW, pageH]);
       page.drawImage(img, { x: 0, y: 0, width: pageW, height: pageH });
     }
@@ -1715,7 +1715,6 @@ label { font-size: 12px; color: var(--muted); }
   }
   function templateList(store2, templates2) {
     const list = templates2.list();
-    store2.dispatch({ type: "TEMPLATES_SET", templates: list });
     if (!list.length) return h2("p", { class: "scale-hint" }, ["\u6682\u65E0\u6A21\u677F"]);
     return h2("div", {}, list.map(
       (t) => h2("div", { class: "row" }, [

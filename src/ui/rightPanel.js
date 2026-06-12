@@ -92,7 +92,6 @@ export function mountRightPanel({ root, store, templates }) {
 
 function templateList(store, templates) {
   const list = templates.list();
-  store.dispatch({ type: 'TEMPLATES_SET', templates: list });
   if (!list.length) return h('p', { class: 'scale-hint' }, ['暂无模板']);
   return h('div', {}, list.map(t =>
     h('div', { class: 'row' }, [

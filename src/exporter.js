@@ -1,5 +1,5 @@
 import { renderPage } from './renderer.js';
-import { MM_PER_PT } from './constants.js';
+import { PT_PER_MM } from './constants.js';
 
 // pdf-lib 在浏览器中作为 window.PDFLib（UMD），构建脚本会内联
 const getPDFLib = () => {
@@ -78,8 +78,8 @@ export async function toPdf({ plans, imageGetter, globalFilters = null, dpi = 30
     const jpgBytes = await canvasToJpgBytes(canvas, 0.92);
     const img = await pdfDoc.embedJpg(jpgBytes);
 
-    const pageW = plan.pageSize.wMm / MM_PER_PT;  // mm → pt
-    const pageH = plan.pageSize.hMm / MM_PER_PT;
+    const pageW = plan.pageSize.wMm * PT_PER_MM;  // mm → pt
+    const pageH = plan.pageSize.hMm * PT_PER_MM;
     const page = pdfDoc.addPage([pageW, pageH]);
     page.drawImage(img, { x: 0, y: 0, width: pageW, height: pageH });
   }
