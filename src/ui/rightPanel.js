@@ -59,6 +59,10 @@ export function mountRightPanel({ root, store, templates }) {
       value: lay.margin, min: 0, max: 50,
       onInput: (v) => store.dispatch({ type: 'LAYOUT_SET', patch: { margin: Number(v) || 0 } })
     })));
+    root.appendChild(field(`证件间距 ${lay.gap ?? 6} mm`, rangeInput({
+      min: 0, max: 80, step: 1, value: lay.gap ?? 6,
+      onInput: (v) => store.dispatch({ type: 'LAYOUT_SET', patch: { gap: Number(v) } })
+    })));
 
     root.appendChild(h('div', { class: 'right-section' }));
     root.appendChild(h('h3', {}, ['复印件感（全局滤镜）']));

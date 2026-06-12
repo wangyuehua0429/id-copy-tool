@@ -185,8 +185,10 @@ label { font-size: 12px; color: var(--muted); }
         type: "stack",
         // stack | side | multi
         perPage: 1,
-        margin: 18
+        margin: 18,
         // mm
+        gap: 6
+        // mm，证件之间的间距
       };
       DEFAULT_FILTERS = {
         grayscale: false,
@@ -303,6 +305,7 @@ label { font-size: 12px; color: var(--muted); }
   }
   function composeStack({ flat, layout, wm }) {
     const margin = layout.margin;
+    const gap = resolveGap(layout);
     const innerW = A4.wMm - 2 * margin;
     const innerH = A4.hMm - 2 * margin;
     const sized = flat.map((it) => ({ ...it, ...sizeForItem(it, innerW, innerH) }));
@@ -310,7 +313,7 @@ label { font-size: 12px; color: var(--muted); }
     let cur = newPage(attachWm(wm));
     let used = 0;
     for (const it of sized) {
-      const needed = it.hMm + (cur.items.length ? GAP_MM : 0);
+      const needed = it.hMm + (cur.items.length ? gap : 0);
       if (used + needed > innerH && cur.items.length) {
         pages.push(cur);
         cur = newPage(attachWm(wm));
@@ -334,9 +337,10 @@ label { font-size: 12px; color: var(--muted); }
   }
   function composeSide({ flat, layout, wm }) {
     const margin = layout.margin;
+    const gap = resolveGap(layout);
     const innerW = A4.wMm - 2 * margin;
     const innerH = A4.hMm - 2 * margin;
-    const colW = (innerW - GAP_MM) / 2;
+    const colW = (innerW - gap) / 2;
     const sized = flat.map((it) => ({ ...it, ...sizeForItem(it, colW, innerH) }));
     const pages = [];
     let cur = newPage(attachWm(wm));
@@ -368,26 +372,26 @@ label { font-size: 12px; color: var(--muted); }
           slot: right2.slot,
           transform: right2.transform,
           filters: right2.filters,
-          xMm: margin + colW + GAP_MM + (colW - right2.wMm) / 2,
+          xMm: margin + colW + gap + (colW - right2.wMm) / 2,
           yMm: margin + cursorY,
           wMm: right2.wMm,
           hMm: right2.hMm
         });
       }
-      cursorY += rowH + GAP_MM;
+      cursorY += rowH + gap;
     }
     if (cur.items.length) pages.push(cur);
     return pages;
   }
-  function composeChunkToPage(chunk, { margin, innerW, innerH, wm }) {
+  function composeChunkToPage(chunk, { margin, innerW, innerH, wm, gap }) {
     const cur = newPage(attachWm(wm));
-    const rowH = (innerH - GAP_MM * (chunk.length - 1)) / chunk.length;
+    const rowH = (innerH - gap * (chunk.length - 1)) / chunk.length;
     chunk.forEach((docItems, rowIdx) => {
-      const rowY = margin + rowIdx * (rowH + GAP_MM);
-      const slotW = (innerW - GAP_MM * (docItems.length - 1)) / docItems.length;
+      const rowY = margin + rowIdx * (rowH + gap);
+      const slotW = (innerW - gap * (docItems.length - 1)) / docItems.length;
       docItems.forEach((it, colIdx) => {
         const { wMm, hMm } = sizeForItem(it, slotW, rowH);
-        const slotX = margin + colIdx * (slotW + GAP_MM);
+        const slotX = margin + colIdx * (slotW + gap);
         cur.items.push({
           sourceId: it.sourceId,
           docId: it.docId,
@@ -406,9 +410,10 @@ label { font-size: 12px; color: var(--muted); }
   function composeMulti({ flat, layout, wm }) {
     const perPage = Math.max(1, Math.trunc(layout.perPage) || 1);
     const margin = layout.margin;
+    const gap = resolveGap(layout);
     const innerW = A4.wMm - 2 * margin;
     const innerH = A4.hMm - 2 * margin;
-    const pageCtx = { margin, innerW, innerH, wm };
+    const pageCtx = { margin, innerW, innerH, wm, gap };
     const byDoc = [];
     const seen = /* @__PURE__ */ new Map();
     for (const it of flat) {
@@ -444,11 +449,15 @@ label { font-size: 12px; color: var(--muted); }
         return composeStack({ flat, layout, wm: watermark });
     }
   }
-  var GAP_MM;
+  var DEFAULT_GAP_MM, resolveGap;
   var init_layout = __esm({
     "src/layout.js"() {
       init_constants();
-      GAP_MM = 6;
+      DEFAULT_GAP_MM = 6;
+      resolveGap = (layout) => {
+        const g = Number(layout?.gap);
+        return Number.isFinite(g) && g >= 0 ? g : DEFAULT_GAP_MM;
+      };
     }
   });
 
@@ -1685,6 +1694,13 @@ label { font-size: 12px; color: var(--muted); }
         min: 0,
         max: 50,
         onInput: (v) => store2.dispatch({ type: "LAYOUT_SET", patch: { margin: Number(v) || 0 } })
+      })));
+      root.appendChild(field(`\u8BC1\u4EF6\u95F4\u8DDD ${lay.gap ?? 6} mm`, rangeInput({
+        min: 0,
+        max: 80,
+        step: 1,
+        value: lay.gap ?? 6,
+        onInput: (v) => store2.dispatch({ type: "LAYOUT_SET", patch: { gap: Number(v) } })
       })));
       root.appendChild(h2("div", { class: "right-section" }));
       root.appendChild(h2("h3", {}, ["\u590D\u5370\u4EF6\u611F\uFF08\u5168\u5C40\u6EE4\u955C\uFF09"]));

@@ -1,7 +1,11 @@
 import { A4 } from './constants.js';
 
-// 版面各元素之间的间距（毫米），统一在版式代码中引用
-const GAP_MM = 6;
+// 版面各元素之间的默认间距（毫米）；layout.gap 可覆盖
+const DEFAULT_GAP_MM = 6;
+const resolveGap = (layout) => {
+  const g = Number(layout?.gap);
+  return Number.isFinite(g) && g >= 0 ? g : DEFAULT_GAP_MM;
+};
 
 // items: 拆解 documents → 平铺的渲染单元，保留 fixed/fit 标记
 function flatten(documents) {
@@ -47,6 +51,7 @@ function sizeForItem(it, availW, availH) {
 
 function composeStack({ flat, layout, wm }) {
   const margin = layout.margin;
+  const gap = resolveGap(layout);
   const innerW = A4.wMm - 2 * margin;
   const innerH = A4.hMm - 2 * margin;
 
@@ -56,7 +61,7 @@ function composeStack({ flat, layout, wm }) {
   let cur = newPage(attachWm(wm));
   let used = 0;
   for (const it of sized) {
-    const needed = it.hMm + (cur.items.length ? GAP_MM : 0);
+    const needed = it.hMm + (cur.items.length ? gap : 0);
     if (used + needed > innerH && cur.items.length) {
       pages.push(cur);
       cur = newPage(attachWm(wm));
@@ -78,9 +83,10 @@ function composeStack({ flat, layout, wm }) {
 function composeSide({ flat, layout, wm }) {
   // 两列布局：左列放奇数序号项，右列放偶数；每行高度 = 该行两项中较大者
   const margin = layout.margin;
+  const gap = resolveGap(layout);
   const innerW = A4.wMm - 2 * margin;
   const innerH = A4.hMm - 2 * margin;
-  const colW = (innerW - GAP_MM) / 2;
+  const colW = (innerW - gap) / 2;
 
   const sized = flat.map(it => ({ ...it, ...sizeForItem(it, colW, innerH) }));
 
@@ -107,28 +113,28 @@ function composeSide({ flat, layout, wm }) {
       cur.items.push({
         sourceId: right.sourceId, docId: right.docId, slot: right.slot,
         transform: right.transform, filters: right.filters,
-        xMm: margin + colW + GAP_MM + (colW - right.wMm) / 2,
+        xMm: margin + colW + gap + (colW - right.wMm) / 2,
         yMm: margin + cursorY,
         wMm: right.wMm, hMm: right.hMm
       });
     }
-    cursorY += rowH + GAP_MM;
+    cursorY += rowH + gap;
   }
   if (cur.items.length) pages.push(cur);
   return pages;
 }
 
 // 把一组"按行排列的文档"绘制到一张新页上。chunk 元素是数组（一个 doc 的所有 slot）。
-function composeChunkToPage(chunk, { margin, innerW, innerH, wm }) {
+function composeChunkToPage(chunk, { margin, innerW, innerH, wm, gap }) {
   const cur = newPage(attachWm(wm));
-  const rowH = (innerH - GAP_MM * (chunk.length - 1)) / chunk.length;
+  const rowH = (innerH - gap * (chunk.length - 1)) / chunk.length;
   chunk.forEach((docItems, rowIdx) => {
-    const rowY = margin + rowIdx * (rowH + GAP_MM);
+    const rowY = margin + rowIdx * (rowH + gap);
     // 同 doc 的 slot 横向排开
-    const slotW = (innerW - GAP_MM * (docItems.length - 1)) / docItems.length;
+    const slotW = (innerW - gap * (docItems.length - 1)) / docItems.length;
     docItems.forEach((it, colIdx) => {
       const { wMm, hMm } = sizeForItem(it, slotW, rowH);
-      const slotX = margin + colIdx * (slotW + GAP_MM);
+      const slotX = margin + colIdx * (slotW + gap);
       cur.items.push({
         sourceId: it.sourceId, docId: it.docId, slot: it.slot,
         transform: it.transform, filters: it.filters,
@@ -145,9 +151,10 @@ function composeMulti({ flat, layout, wm }) {
   // perPage = 每页"份数"。一份 = 同一 docId 的所有 slot。
   const perPage = Math.max(1, Math.trunc(layout.perPage) || 1);
   const margin = layout.margin;
+  const gap = resolveGap(layout);
   const innerW = A4.wMm - 2 * margin;
   const innerH = A4.hMm - 2 * margin;
-  const pageCtx = { margin, innerW, innerH, wm };
+  const pageCtx = { margin, innerW, innerH, wm, gap };
 
   // 按 doc 分组，保留 doc 顺序
   const byDoc = [];

@@ -33,7 +33,8 @@ export const DEFAULT_WATERMARK = {
 export const DEFAULT_LAYOUT = {
   type: 'stack',     // stack | side | multi
   perPage: 1,
-  margin: 18         // mm
+  margin: 18,        // mm
+  gap: 6             // mm，证件之间的间距
 };
 
 export const DEFAULT_FILTERS = {
