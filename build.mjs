@@ -1,6 +1,5 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { build as esbuild } from 'esbuild';
-import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = new URL('./', import.meta.url);
