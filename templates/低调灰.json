@@ -1,0 +1,17 @@
+{
+  "name": "低调灰（不抢眼）",
+  "watermark": {
+    "enabled": true,
+    "text": "仅供{project}内部留存 {date}",
+    "project": "某某项目",
+    "color": "#404040",
+    "opacity": 0.25,
+    "fontSize": 12,
+    "angleDeg": -30,
+    "gapX": 160,
+    "gapY": 100,
+    "includeDate": true
+  },
+  "layout": { "type": "stack", "perPage": 1, "margin": 18 },
+  "filters": { "grayscale": false, "brightness": 1, "contrast": 1 }
+}

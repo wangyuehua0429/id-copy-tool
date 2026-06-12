@@ -1,0 +1,17 @@
+{
+  "name": "投标红（默认）",
+  "watermark": {
+    "enabled": true,
+    "text": "仅供{project}投标使用 {date}",
+    "project": "某某项目",
+    "color": "#dc2626",
+    "opacity": 0.35,
+    "fontSize": 14,
+    "angleDeg": -30,
+    "gapX": 140,
+    "gapY": 90,
+    "includeDate": true
+  },
+  "layout": { "type": "stack", "perPage": 1, "margin": 18 },
+  "filters": { "grayscale": false, "brightness": 1, "contrast": 1 }
+}
